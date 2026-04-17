@@ -1,0 +1,18 @@
+# Method comparison: raw REINFORCE (no baseline, no critic)
+experiment_name: method-reinforce
+env:
+  grid_width: 10
+  grid_height: 10
+  num_agents: 1
+  wall_density: 0.0
+  max_steps: 100
+network:
+  actor_hidden_dim: 128
+  actor_num_layers: 2
+train:
+  method: reinforce
+  lr: 3.0e-4
+  gamma: 0.90
+  num_episodes: 1000
+  num_seeds: 5
+enforce_connectivity: false

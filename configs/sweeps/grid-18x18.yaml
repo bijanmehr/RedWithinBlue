@@ -1,0 +1,23 @@
+# Grid scaling: single agent on 18x18 (stress test, larger observation space)
+# Warm-starts from trained solo-explore checkpoint (10x10)
+experiment_name: grid-18x18
+env:
+  grid_width: 18
+  grid_height: 18
+  num_agents: 1
+  wall_density: 0.0
+  max_steps: 324
+  comm_radius: 3.0
+network:
+  actor_hidden_dim: 128
+  actor_num_layers: 2
+  critic_hidden_dim: 128
+  critic_num_layers: 2
+train:
+  method: actor_critic
+  lr: 1.5e-4
+  gamma: 0.90
+  num_episodes: 1000
+  num_seeds: 5
+enforce_connectivity: false
+warm_start: experiments/solo-explore/checkpoint.npz

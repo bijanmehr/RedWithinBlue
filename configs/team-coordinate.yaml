@@ -1,0 +1,19 @@
+# Team coordination: four agents coordinate exploration on an 18x18 grid with obstacles.
+experiment_name: team-coordinate
+
+env:
+  grid_width: 18
+  grid_height: 18
+  num_agents: 4
+  wall_density: 0.1
+  max_steps: 256
+  comm_radius: 5.0
+
+train:
+  method: actor_critic
+  lr: 1.5e-4
+  gamma: 0.99
+  num_episodes: 2000
+  num_seeds: 5
+
+enforce_connectivity: true

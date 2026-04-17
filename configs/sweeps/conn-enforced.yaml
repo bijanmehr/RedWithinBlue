@@ -1,0 +1,23 @@
+# Connectivity comparison: 2 agents WITH connectivity enforcement
+# Warm-starts from trained solo-explore checkpoint
+experiment_name: conn-enforced
+env:
+  grid_width: 10
+  grid_height: 10
+  num_agents: 2
+  wall_density: 0.0
+  max_steps: 100
+  comm_radius: 3.0
+network:
+  actor_hidden_dim: 128
+  actor_num_layers: 2
+  critic_hidden_dim: 128
+  critic_num_layers: 2
+train:
+  method: actor_critic
+  lr: 1.5e-4
+  gamma: 0.90
+  num_episodes: 1000
+  num_seeds: 5
+enforce_connectivity: true
+warm_start: experiments/solo-explore/checkpoint.npz

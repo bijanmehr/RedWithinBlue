@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+.env
+.DS_Store
+.claude/
+.superpowers/
+.pytest_cache/
+experiments/
+*.log
