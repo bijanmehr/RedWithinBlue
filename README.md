@@ -20,7 +20,7 @@ Agents explore grid worlds, communicate over distance-based graphs, and learn co
 ## Installation
 
 ```bash
-git clone https://github.com/<your-username>/RedWithinBlue.git
+git clone https://github.com/bijanmehr/RedWithinBlue.git
 cd RedWithinBlue
 python -m venv venv && source venv/bin/activate
 pip install -e ".[dev]"
