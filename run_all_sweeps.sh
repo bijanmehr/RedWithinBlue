@@ -23,7 +23,11 @@ NUM_GPUS="${NUM_GPUS:-$(nvidia-smi --query-gpu=index --format=csv,noheader 2>/de
 if [ -z "$NUM_GPUS" ] || [ "$NUM_GPUS" = "0" ]; then
     NUM_GPUS=1
 fi
-echo "Detected $NUM_GPUS GPU(s). Round-robin assignment enabled."
+
+# Max concurrent experiments. Default: one per GPU (safe for tight memory).
+# Override with MAX_PARALLEL=N to run N at a time across all GPUs.
+MAX_PARALLEL="${MAX_PARALLEL:-$NUM_GPUS}"
+echo "Detected $NUM_GPUS GPU(s). Max $MAX_PARALLEL concurrent experiment(s)."
 
 OUTPUT_DIR="${OUTPUT_DIR:-experiments}"
 RUNNER="python -m red_within_blue.training.runner"
@@ -44,36 +48,49 @@ run_batch() {
     echo "=== $label: launching ${#configs[@]} experiments ==="
     echo ""
 
-    local pids=()
-    local names=()
+    # Launch with bounded concurrency (MAX_PARALLEL). Each job maps to a GPU
+    # via round-robin. When MAX_PARALLEL is reached, wait for any to finish
+    # before starting the next.
     local gpu_idx=0
+    local failed=0
+    declare -A pid_name
+    local running=0
 
     for cfg in "${configs[@]}"; do
         local name
         name=$(basename "$cfg" .yaml)
         local gpu=$((gpu_idx % NUM_GPUS))
+
+        # Throttle: wait for a slot if we hit MAX_PARALLEL
+        while [ "$running" -ge "$MAX_PARALLEL" ]; do
+            if wait -n 2>/dev/null; then
+                :
+            else
+                failed=$((failed + 1))
+            fi
+            running=$((running - 1))
+        done
+
         echo "  Starting: $name (GPU $gpu)"
         CUDA_VISIBLE_DEVICES=$gpu $RUNNER --config "$cfg" --output-dir "$OUTPUT_DIR" \
             > "${OUTPUT_DIR}/${name}.log" 2>&1 &
-        pids+=($!)
-        names+=("$name")
+        pid_name[$!]="$name"
         gpu_idx=$((gpu_idx + 1))
+        running=$((running + 1))
     done
 
     echo ""
-    echo "Waiting for $label to complete..."
+    echo "Waiting for remaining $label jobs to complete..."
     echo ""
 
-    local failed=0
-    for i in "${!pids[@]}"; do
-        local pid=${pids[$i]}
-        local name=${names[$i]}
-        if wait "$pid"; then
-            echo "  DONE: $name"
+    # Drain remaining jobs
+    while [ "$running" -gt 0 ]; do
+        if wait -n 2>/dev/null; then
+            :
         else
-            echo "  FAIL: $name (see ${OUTPUT_DIR}/${name}.log)"
             failed=$((failed + 1))
         fi
+        running=$((running - 1))
     done
 
     echo ""
