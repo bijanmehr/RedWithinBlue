@@ -13,6 +13,11 @@
 
 set -euo pipefail
 
+# GPU memory: disable JAX preallocation and cap each process at a fraction of
+# GPU memory so many sweeps can share the same GPU(s) without OOM.
+export XLA_PYTHON_CLIENT_PREALLOCATE="${XLA_PYTHON_CLIENT_PREALLOCATE:-false}"
+export XLA_PYTHON_CLIENT_MEM_FRACTION="${XLA_PYTHON_CLIENT_MEM_FRACTION:-0.15}"
+
 OUTPUT_DIR="${OUTPUT_DIR:-experiments}"
 RUNNER="python -m red_within_blue.training.runner"
 mkdir -p "$OUTPUT_DIR"
