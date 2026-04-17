@@ -16,7 +16,14 @@ set -euo pipefail
 # GPU memory: disable JAX preallocation and cap each process at a fraction of
 # GPU memory so many sweeps can share the same GPU(s) without OOM.
 export XLA_PYTHON_CLIENT_PREALLOCATE="${XLA_PYTHON_CLIENT_PREALLOCATE:-false}"
-export XLA_PYTHON_CLIENT_MEM_FRACTION="${XLA_PYTHON_CLIENT_MEM_FRACTION:-0.15}"
+export XLA_PYTHON_CLIENT_MEM_FRACTION="${XLA_PYTHON_CLIENT_MEM_FRACTION:-0.08}"
+
+# Detect available GPUs (comma-separated list of IDs) and round-robin across them.
+NUM_GPUS="${NUM_GPUS:-$(nvidia-smi --query-gpu=index --format=csv,noheader 2>/dev/null | wc -l)}"
+if [ -z "$NUM_GPUS" ] || [ "$NUM_GPUS" = "0" ]; then
+    NUM_GPUS=1
+fi
+echo "Detected $NUM_GPUS GPU(s). Round-robin assignment enabled."
 
 OUTPUT_DIR="${OUTPUT_DIR:-experiments}"
 RUNNER="python -m red_within_blue.training.runner"
@@ -39,14 +46,18 @@ run_batch() {
 
     local pids=()
     local names=()
+    local gpu_idx=0
 
     for cfg in "${configs[@]}"; do
         local name
         name=$(basename "$cfg" .yaml)
-        echo "  Starting: $name"
-        $RUNNER --config "$cfg" --output-dir "$OUTPUT_DIR" > "${OUTPUT_DIR}/${name}.log" 2>&1 &
+        local gpu=$((gpu_idx % NUM_GPUS))
+        echo "  Starting: $name (GPU $gpu)"
+        CUDA_VISIBLE_DEVICES=$gpu $RUNNER --config "$cfg" --output-dir "$OUTPUT_DIR" \
+            > "${OUTPUT_DIR}/${name}.log" 2>&1 &
         pids+=($!)
         names+=("$name")
+        gpu_idx=$((gpu_idx + 1))
     done
 
     echo ""
