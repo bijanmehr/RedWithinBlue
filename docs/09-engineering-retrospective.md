@@ -117,8 +117,8 @@ on returns.
    predictions, so the self-amplifying feedback loop is structurally
    impossible.
 
-**Alternative not taken: GAE(λ=0.95).** The earlier `temp/` PettingZoo
-version used this. We chose MC over GAE for two reasons: (a) episode
+**Alternative not taken: GAE(λ=0.95).** The earlier PettingZoo
+version (since removed; see Appendix A) used this. We chose MC over GAE for two reasons: (a) episode
 length is 100 steps — MC variance is manageable; (b) the terminal
 coverage bonus is ~80× per-step reward, and GAE(0.95) discounts the
 terminal to ≈0.006 at t=0, effectively zeroing it out for early
@@ -532,7 +532,7 @@ prove resilience properties, not just measure them.
 
 | Branch / experiment | Abandoned because | Date |
 |---|---|---|
-| PettingZoo + PPO (`temp/maexp_pettingzoo_env_py.py`) | Too much boilerplate, no JAX parallelism, PettingZoo API adds overhead that JAX env avoids | pre-v1.0 |
+| PettingZoo + PPO (`temp/maexp_pettingzoo_env_py.py`, since removed from the repo) | Too much boilerplate, no JAX parallelism, PettingZoo API adds overhead that JAX env avoids | pre-v1.0 |
 | TD(0) critic path | Critic drift; unable to stabilize without restructuring the target (see §4.1, §2.3) | 2026-04 |
 | Twin-Q + Polyak target for central critic (EXP-A variants) | Underperformed MC baseline at full scale | 2026-04-20 |
 | Off-policy Double-DQN for joint-red (EXP-B) | Weaker than REINFORCE at 20× wall-clock (see §4.7) | 2026-04-20 |
