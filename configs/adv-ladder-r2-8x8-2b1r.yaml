@@ -1,0 +1,59 @@
+# Adversarial ladder, RUNG 2 — 8x8, 2 blue vs 1 red. Warm-start blue actor
+# from rung 1 (6x6 1b1r); grid upsample handles 6x6 -> 8x8 obs shape change.
+#
+# Red is FRESH (joint-red trainer doesn't warm-start red, and per-grid obs_dim
+# differs from rung 1 anyway — so the prior red checkpoint isn't shape-compatible).
+# Blue gets a small head start; we want to see red close that gap.
+experiment_name: adv-ladder-r2-8x8-2b1r
+
+env:
+  grid_width: 8
+  grid_height: 8
+  num_agents: 3            # 2 blue + 1 red
+  num_red_agents: 1
+  wall_density: 0.0
+  max_steps: 75
+  comm_radius: 4.0
+  obs_radius: 1
+  view_radius: 1
+  survey_radius: 0
+  local_obs: true
+  center_spawn: true
+  normalize_uid: true
+
+network:
+  actor_hidden_dim: 128
+  actor_num_layers: 2
+  critic_hidden_dim: 128
+  critic_num_layers: 2
+  activation: relu
+
+train:
+  method: reinforce
+  red_policy: joint
+  red_hidden_dim: 128
+  red_num_layers: 2
+  red_pretrain_episodes: 0
+  lr: 1.0e-4
+  gamma: 0.99
+  num_episodes: 7500
+  num_seeds: 2
+  ent_coef: 0.05
+  grad_clip: 0.5
+
+reward:
+  disconnect_penalty: 0.0
+  isolation_weight: 0.0
+  cooperative_weight: 0.0
+  revisit_weight: 0.0
+  spread_weight: 0.0
+  terminal_bonus_scale: 10.0
+  terminal_bonus_divide: true
+  fog_potential_weight: 0.1
+
+enforce_connectivity: true
+
+# Blue actor warm-start. Grid upsamples 6x6 -> 8x8 via nearest-neighbor on the
+# local_map slice of the per-agent obs (local_obs=true required and satisfied).
+warm_start: experiments/adv-ladder-r1-6x6-1b1r/checkpoint.npz
+warm_start_source_num_agents: 2

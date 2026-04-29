@@ -1,0 +1,90 @@
+# Four-agent cooperation on a 16x16 open grid. Warm-starts BOTH actor and
+# central critic from the 8x8 quad checkpoint via the grid-aware warm-start
+# loader (runner.py:_upsample_first_layer_for_grid). This config is the
+# 16x16 half of the warm-start pipeline smoke test:
+#   quad-cooperate-coop-8 (train from scratch) -> quad-cooperate-coop-16 (warm-start)
+#
+# Purpose: validate end-to-end that the grid-aware loader's actor + critic
+# transfer path works before committing to the 45-90 minute 32x32 production
+# run. The 8 -> 16 grid ratio (4x cells) mirrors the 14 -> 32 ratio (5.2x)
+# closely enough to catch bugs, at ~5 minutes wall-clock vs. ~50 minutes.
+#
+# Transfer mechanics (see runner.py header comment for full details):
+#   Actor  Dense_0 kernel [5, 69, 256]  -> split into scan(1)/grid(64)/tail(5),
+#     reshape grid to [5, 8, 8, 256], nearest-neighbor resize to
+#     [5, 16, 16, 256], flatten back to [5, 261, 256].
+#   Critic Dense_0 kernel [5, 276, 256] -> split into N=4 per-agent blocks
+#     of [5, 69, 256], upsample each block's grid rows the same way, then
+#     concatenate back along the input axis to [5, 1044, 256].
+#   Deeper Dense layers (actor + critic) transfer verbatim.
+#
+# Constraints for critic transfer (all satisfied here):
+#   - num_agents identical (4 in both)
+#   - critic_hidden_dim identical (256 in both)
+#   - critic_num_layers identical (3 in both)
+#
+# Scale reference on a 16x16 grid (inner 14x14 = 196 playable cells):
+#   - per self-discovery             = +0.01
+#   - max team self-discovery sum    = +1.96 (all cells discovered once)
+#   - max cooperative bonus sum      = ~+8.82 (0.015 * 196 * 3 receiving neighbours)
+#   - terminal bonus at full coverage = +4.0 team total (N=4 * +1.0/agent)
+#   - realistic team return          = ~+3 to +6 (matches quad-14 headline of +6.5)
+#
+# Scaling from quad-cooperate-coop-8.yaml (8x8):
+#   - grid 8 -> 16      : 4x the grid cells; similar structural scale-up.
+#   - max_steps 80 -> 150 : ~2x, enough for 4 agents to cover 196 cells.
+#   - comm_radius 4.0 -> 8.0 : keeps radius/width = 0.5.
+#   - num_episodes 6000 -> 8000 : still a smoke; full 16x16 would warrant ~15k.
+#   - network shape unchanged so the checkpoint is bit-compatible.
+experiment_name: quad-cooperate-coop-16
+
+env:
+  grid_width: 16
+  grid_height: 16
+  num_agents: 4
+  wall_density: 0.0
+  max_steps: 150
+  comm_radius: 8.0
+  obs_radius: 0
+  center_spawn: true
+
+network:
+  actor_hidden_dim: 256         # MUST match source checkpoint.
+  actor_num_layers: 3           # MUST match source checkpoint.
+  critic_hidden_dim: 256        # MUST match source so critic can warm-start.
+  critic_num_layers: 3          # MUST match source.
+  activation: relu              # MUST match source.
+
+train:
+  method: actor_critic
+  # Warm-start is already productive on 16x16 (pre-training diagnostic:
+  # sample-pi mean +7.72, coverage 82.7% with ZERO gradient steps applied).
+  # The previous 8000-ep x 1.5e-4 fine-tune collapsed this to +1.68, final
+  # coverage 25.5% — agents walked to a corner and stopped. Fix: much gentler
+  # fine-tune so we adapt the warm-started policy rather than overwrite it.
+  #   lr 1.5e-4 -> 3e-5    (5x lower, matches warm-started-policy magnitude)
+  #   num_episodes 8000 -> 2000  (4x shorter — no need to re-learn, just adapt)
+  lr: 3.0e-5
+  gamma: 0.99
+  num_episodes: 2000
+  num_seeds: 5
+  ent_coef: 0.05
+  epsilon: 0.05
+  epsilon_final: 0.005
+  ent_coef_final: 0.005
+  anneal_end_frac: 0.5
+  grad_clip: 0.25
+
+reward:
+  disconnect_penalty: 0.0
+  isolation_weight: -0.002
+  cooperative_weight: 0.015
+  revisit_weight: -0.001
+  terminal_bonus_scale: 4.0
+  terminal_bonus_divide: true
+
+enforce_connectivity: true
+
+# Warm-start from the 8x8 quad checkpoint. Loader auto-detects the grid
+# mismatch and upsamples both actor and critic first-layer kernels.
+warm_start: experiments/quad-cooperate-coop-8/checkpoint.npz

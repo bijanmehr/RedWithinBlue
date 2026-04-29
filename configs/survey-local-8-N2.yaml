@@ -1,0 +1,53 @@
+# Rung 2 of the survey-local warm-start ladder.
+#
+# 2 agents on 8x8. Warm-starts actor + central critic from the N=1 rung via
+# 1 -> 2 per-agent block tiling. Adds the cohesion reward terms (cooperative
+# + isolation) that only make sense with N>=2.
+experiment_name: survey-local-8-N2
+
+env:
+  grid_width: 8
+  grid_height: 8
+  num_agents: 2
+  wall_density: 0.0
+  max_steps: 80
+  comm_radius: 4.0
+  obs_radius: 1
+  view_radius: 1
+  survey_radius: 0
+  local_obs: true
+  center_spawn: true
+  normalize_uid: true
+
+network:
+  actor_hidden_dim: 128
+  actor_num_layers: 2
+  critic_hidden_dim: 128
+  critic_num_layers: 2
+  activation: relu
+
+train:
+  method: actor_critic
+  lr: 1.0e-4                      # 3x more gentle than the fresh rung
+  gamma: 0.99
+  num_episodes: 2000
+  num_seeds: 5
+  ent_coef: 0.01
+  epsilon: 0.01
+  epsilon_final: 0.005
+  ent_coef_final: 0.005
+  anneal_end_frac: 0.5
+  grad_clip: 0.25
+
+reward:
+  disconnect_penalty: 0.0
+  isolation_weight: -0.002
+  cooperative_weight: 0.015
+  revisit_weight: -0.001
+  terminal_bonus_scale: 4.0
+  terminal_bonus_divide: true
+
+enforce_connectivity: true
+
+warm_start: experiments/survey-local-8-N1/checkpoint.npz
+warm_start_source_num_agents: 1

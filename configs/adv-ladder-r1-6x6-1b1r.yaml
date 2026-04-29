@@ -1,0 +1,57 @@
+# Adversarial ladder, RUNG 1 — 6x6, 1 blue vs 1 red, COLD start (both teams).
+#
+# Smallest viable adversarial unit: one blue must cover the grid while one red
+# tries to fog cells from blue's belief. This is the "atomic" 1v1 game where
+# we expect to see red learn *something* — even if just "stay near blue".
+#
+# Cold-start both teams from random init. Subsequent rungs warm-start the
+# blue actor from this checkpoint (grid upsample handles the size change).
+experiment_name: adv-ladder-r1-6x6-1b1r
+
+env:
+  grid_width: 6
+  grid_height: 6
+  num_agents: 2            # 1 blue + 1 red
+  num_red_agents: 1
+  wall_density: 0.0
+  max_steps: 50            # ~tile budget for a 6x6 grid (36 cells / 1 blue)
+  comm_radius: 4.0
+  obs_radius: 1
+  view_radius: 1
+  survey_radius: 0
+  local_obs: true
+  center_spawn: true
+  normalize_uid: true
+
+network:
+  actor_hidden_dim: 128
+  actor_num_layers: 2
+  critic_hidden_dim: 128   # unused by joint-red REINFORCE path
+  critic_num_layers: 2
+  activation: relu
+
+train:
+  method: reinforce
+  red_policy: joint
+  red_hidden_dim: 128
+  red_num_layers: 2
+  red_pretrain_episodes: 0
+  lr: 1.0e-4
+  gamma: 0.99
+  num_episodes: 5000
+  num_seeds: 2
+  ent_coef: 0.05
+  grad_clip: 0.5
+
+reward:
+  disconnect_penalty: 0.0
+  isolation_weight: 0.0
+  cooperative_weight: 0.0
+  revisit_weight: 0.0
+  spread_weight: 0.0
+  terminal_bonus_scale: 10.0
+  terminal_bonus_divide: true
+  fog_potential_weight: 0.1   # gives blue an exploration drive against fog;
+                              # potential-based so policy-invariant.
+
+enforce_connectivity: true    # red->blue fog flows along comm edges.

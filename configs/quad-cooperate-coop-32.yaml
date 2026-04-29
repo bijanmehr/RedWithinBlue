@@ -1,0 +1,135 @@
+# Four-agent cooperation on a 32x32 open grid. Warm-starts both the actor and
+# the central critic from the 16x16 checkpoint (quad-cooperate-coop-16), which
+# was itself warm-started from the 8x8 checkpoint — a three-stage ladder
+# (8 -> 16 -> 32) where each step preserves the cooperative policy and the
+# central critic via grid-aware spatial upsample of Dense_0 kernels.
+#
+# Why the 16x16 source (not the 14x14 quad):
+#   - The 16x16 run validated the end-to-end warm-start + gentle fine-tune
+#     recipe: sample-pi mean +8.59 across all 5 seeds after 2000 eps at
+#     lr=3.0e-5, coverage 80% on best seed. The 14x14 source had a structural
+#     bad seed and ~+6.53 headline.
+#   - 16 -> 32 is a clean 2x linear / 4x cell jump (identical ratio to the
+#     8 -> 16 smoke that validated the pipeline). Predictable scaling.
+#   - Power-of-two grids make the upsample exact (no aliasing at 16->32).
+#
+# Transfer path (actor): Dense_0 kernel [5, 262, 256] is split into
+# scan(1) + grid(256) + tail(5), grid is reshaped [5, 16, 16, 256],
+# nearest-neighbor resized to [5, 32, 32, 256], flattened back and
+# reconcatenated to [5, 1030, 256]. Deeper Dense layers are grid-invariant
+# and copy verbatim.
+#
+# Transfer path (central critic): Dense_0 kernel [5, 1048, 256] is split
+# into N=4 per-agent blocks of [5, 262, 256]. Each block's grid rows are
+# upsampled the same way as the actor's, then concatenated back along the
+# input axis to [5, 4120, 256]. Requires source and target to share
+# num_agents AND critic_hidden_dim / critic_num_layers — if any differ the
+# loader falls back to re-init and logs a clear warning.
+#
+# Prior-run cautionary tale (archived in experiments/quad-cooperate-coop-32-
+# actor-only-baseline/ and written up in experiments/README.md):
+#
+#   First attempt (2026-04-18, 14 -> 32, critic_hidden_dim=512, critic re-init'd):
+#     reward +12.9 -> +0.55 over 25k eps, |loss| p99 1.4k -> 2.2M. The actor
+#     arrived cooperative via warm-start; the re-init'd 4120-wide critic
+#     generated increasingly wrong MC targets and dragged the policy into a
+#     corner (sample-from-pi = argmax, eps=0.05 random beat the learned
+#     policy). Matching critic_hidden_dim=256 is what lets us transfer it too.
+#
+#   Second attempt (14 -> 32, actor+critic transferred, lr=1.5e-4):
+#     The 16x16 smoke at the same recipe collapsed from +7.72 (raw warm-start)
+#     to +1.68 (final) because the source LR was tuned for from-scratch
+#     training, not for a converged warm-start. A converged warm-start needs
+#     a gentle fine-tune (lr ~5x smaller, num_episodes ~4x shorter) so the
+#     transferred policy is *adapted*, not *overwritten*. This config applies
+#     that lesson directly.
+#
+# Scaling rationale vs quad-cooperate-coop-16.yaml (16x16, N=4):
+#   - grid 16 -> 32 : 4x more cells (256 -> 1024).
+#   - max_steps 150 -> 400 : roughly matches the cell ratio; realistic
+#     coverage will be partial (~30-70%) rather than full.
+#   - comm_radius 8.0 -> 16.0 : keeps radius/width = 0.5 (same fractional
+#     reach across the whole family).
+#   - critic_hidden_dim stays 256 : MUST match source so the critic can be
+#     warm-started. Input width changes (1048 -> 4120), hidden stays.
+#   - lr 3.0e-5 -> 1.0e-5 : per-episode reward scales with cell count, so the
+#     same "gentle" LR that worked on 16x16 overshot here. See comment in
+#     the train: block below for the receipts.
+#   - num_episodes 2000 -> 500 : training is fundamentally optional at this
+#     scale (warm-start alone is +13.98). 500 eps gets the policy recalibrated
+#     to the new joint-obs scale without re-learning.
+#   - ent_coef / epsilon pinned to 0.005 from the start (no anneal) : the
+#     warm-started policy already has the right entropy; anneal would push it
+#     toward uniform early, which breaks the spatial coordination pattern.
+#   - grad_clip stays at 0.25 (proven at quad scale; do not loosen).
+#
+# Scale reference on a 32x32 grid with N=4:
+#   - per self-discovery             = +0.01
+#   - max team self-discovery sum    = +10.24 (all cells discovered once)
+#   - max cooperative bonus sum      = +46 (0.015 * 1024 * 3 receiving neighbours)
+#   - terminal bonus at full coverage = +4.0 total (N=4 * +1.0/agent)
+#   - realistic team return          = ~+3 to +8 (partial coverage)
+experiment_name: quad-cooperate-coop-32
+
+env:
+  grid_width: 32
+  grid_height: 32
+  num_agents: 4
+  wall_density: 0.0
+  max_steps: 400
+  comm_radius: 16.0
+  obs_radius: 0
+  center_spawn: true
+
+network:
+  actor_hidden_dim: 256         # MUST match source checkpoint (quad-16).
+  actor_num_layers: 3           # MUST match source checkpoint.
+  critic_hidden_dim: 256        # MUST match source so critic can warm-start.
+  critic_num_layers: 3
+  activation: relu              # MUST match source checkpoint.
+
+train:
+  method: actor_critic
+  # ULTRA-gentle fine-tune off a converged warm-start. See experiments/README.md
+  # for the full story. Summary: the same (lr=3e-5, 2000 eps) recipe that worked
+  # for 8x8->16x16 overshot here because the 32x32 per-episode reward is ~4x
+  # bigger (more cells * cooperative bonus) so effective gradient magnitude was
+  # 4x what it had been on 16x16. A 3000-ep lr=3e-5 run degraded sample-pi from
+  # the pre-training +13.98 baseline down to +4.88. Pulling lr to 1e-5,
+  # num_episodes to 500, and pinning ent_coef/epsilon to the 0.005 floor from
+  # the start (no anneal) keeps the final policy within 2.7 pts of the raw
+  # warm-start (sample-pi +11.24, all 5 seeds in [+10.24, +12.78]) while also
+  # gaining a few points of coverage (58.1% vs warm-start 50.7%).
+  #
+  # The warm-start itself already produces sample-pi +13.98 with zero gradient
+  # steps — see experiments/quad-cooperate-coop-32/eval_pretraining.txt. At this
+  # grid scale, training is fundamentally optional; this recipe trades ~2 pts of
+  # sample-pi reward for higher coverage and a runnable training curve.
+  lr: 1.0e-5
+  gamma: 0.99
+  num_episodes: 500
+  num_seeds: 5
+  ent_coef: 0.005
+  epsilon: 0.005
+  epsilon_final: 0.005
+  ent_coef_final: 0.005
+  anneal_end_frac: 0.5
+  grad_clip: 0.25
+
+reward:
+  disconnect_penalty: 0.0
+  isolation_weight: -0.002
+  cooperative_weight: 0.015
+  revisit_weight: -0.001
+  # With divide=true and N=4, per-agent terminal = scale/N at full coverage.
+  # scale=4.0 -> +1.0/agent (same as pair/quad/quad-16).
+  terminal_bonus_scale: 4.0
+  terminal_bonus_divide: true
+
+enforce_connectivity: true
+
+# Warm-start: both actor and central critic come from the 16x16 checkpoint
+# via the grid-aware loader. Each Dense_0 kernel's grid rows are spatially
+# upsampled to 32x32 (nearest-neighbor); deeper Dense layers are grid-invariant
+# and transfer verbatim. See runner.py:_upsample_first_layer_for_grid.
+warm_start: experiments/quad-cooperate-coop-16/checkpoint.npz

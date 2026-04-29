@@ -1,0 +1,63 @@
+# 1 red vs 4 blue on 16x16, 100-step budget — Stage C smoke run.
+#
+# Purpose: populate the new Nash & Duality diagnostics (per-team policy
+# entropy + zero-sum reward mirror) on a small adversarial config so the
+# user can SEE the duality before we commit to the full Stage D warm-start
+# loader. Uses the joint-red trainer path (decentralized blue REINFORCE +
+# centralized JointRedActor REINFORCE, two independent optimizers).
+#
+# No warm-start. Both teams start from random init — entropy curves will
+# begin near log(5) ≈ 1.61 nats and (hopefully) settle into a mixed Nash.
+experiment_name: survey-local-16fast-1red-4blue
+
+env:
+  grid_width: 16
+  grid_height: 16
+  num_agents: 5            # 4 blue + 1 red
+  num_red_agents: 1
+  wall_density: 0.0
+  max_steps: 100
+  comm_radius: 5.0
+  obs_radius: 1
+  view_radius: 1
+  survey_radius: 0
+  local_obs: true
+  center_spawn: true
+  normalize_uid: true
+
+network:
+  actor_hidden_dim: 128
+  actor_num_layers: 2
+  critic_hidden_dim: 128   # unused by the joint-red REINFORCE path
+  critic_num_layers: 2
+  activation: relu
+
+train:
+  method: reinforce        # joint-red path requires reinforce
+  red_policy: joint        # centralized JointRedActor for the 1 red
+  red_hidden_dim: 128
+  red_num_layers: 2
+  red_pretrain_episodes: 0
+  lr: 1.0e-4
+  gamma: 0.99
+  num_episodes: 1500       # tight smoke budget — refine after we see plots
+  num_seeds: 2
+  ent_coef: 0.05           # prevent premature deterministic collapse — needed
+                           # for a mixed Nash and to keep blue exploring early
+  grad_clip: 0.5
+
+reward:
+  disconnect_penalty: 0.0
+  isolation_weight: 0.0
+  cooperative_weight: 0.0
+  revisit_weight: 0.0
+  spread_weight: 0.0
+  terminal_bonus_scale: 10.0
+  terminal_bonus_divide: true
+  fog_potential_weight: 0.1   # potential-based pull toward nearest unknown cell;
+                              # +6.6 pp mean coverage on N=5 16×16 100-step.
+                              # Policy-invariant (Ng et al. 1999).
+
+enforce_connectivity: true    # MANDATORY: red→blue fog propagation flows
+                              # along comm edges. Fragmented graph = no
+                              # information flow = mechanic silently dies.

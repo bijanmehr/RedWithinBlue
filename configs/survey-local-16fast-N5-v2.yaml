@@ -1,0 +1,58 @@
+# N=5 16x16 max_steps=100 — second attempt, longer training + N=4 actor source.
+#
+# v1 (survey-local-16fast-N5) warm-started from N=1 16fast at 100 steps and
+# hit 47% playable coverage.  This variant:
+#   - Warm-starts actor from the N=4 16x16 winner (knows how to sweep 16x16).
+#     Critic cold-starts (5 % 4 != 0 blocks tile).
+#   - 10000 training episodes — the fresh critic needs the extra budget.
+#   - Stronger spread_weight (0.005 vs 0.003) to push lanes apart on short horizon.
+#   - Heavier terminal_bonus (12 vs 10) to dominate per-step noise.
+experiment_name: survey-local-16fast-N5-v2
+
+env:
+  grid_width: 16
+  grid_height: 16
+  num_agents: 5
+  wall_density: 0.0
+  max_steps: 100
+  comm_radius: 5.0
+  obs_radius: 1
+  view_radius: 1
+  survey_radius: 0
+  local_obs: true
+  center_spawn: true
+  normalize_uid: true
+
+network:
+  actor_hidden_dim: 128
+  actor_num_layers: 2
+  critic_hidden_dim: 128
+  critic_num_layers: 2
+  activation: relu
+
+train:
+  method: actor_critic
+  lr: 5.0e-5
+  gamma: 0.99
+  num_episodes: 10000
+  num_seeds: 5
+  ent_coef: 0.01
+  epsilon: 0.01
+  epsilon_final: 0.005
+  ent_coef_final: 0.005
+  anneal_end_frac: 0.5
+  grad_clip: 0.25
+
+reward:
+  disconnect_penalty: 0.0
+  isolation_weight: 0.0
+  cooperative_weight: 0.0
+  revisit_weight: -0.005
+  spread_weight: 0.005
+  terminal_bonus_scale: 12.0
+  terminal_bonus_divide: true
+
+enforce_connectivity: true
+
+warm_start: experiments/survey-local-16-N4/checkpoint.npz
+warm_start_source_num_agents: 4

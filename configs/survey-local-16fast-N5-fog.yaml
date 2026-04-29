@@ -1,0 +1,69 @@
+# N=5 16x16 tight-budget with Bayesian fog-of-war reward shaping.
+#
+# Bayesian framing:
+#   - Each cell carries 1 bit of unknown state (wall / not-wall).
+#   - A visit disambiguates the cell: +1 bit of information gained.
+#   - Per-step reward = bits of entropy eliminated at the agent's cell
+#     = +1/N_playable on first visit, 0 on revisits (flat reward path).
+#   - Revisiting costs via revisit_weight: revisit_weight<0 penalises
+#     stepping onto already-known cells.
+#
+# Fog-of-war pull (the new term):
+#   - Per step, each agent gets +fog_potential_weight * ΔΦ
+#     where Φ(agent) = −L1 distance to the nearest still-unknown cell.
+#   - Positive when moving toward fog, negative when moving away.
+#   - Each agent finds its OWN nearest frontier, so the team spreads
+#     across the uncertainty field instead of piling onto one edge.
+#
+# fog_potential_weight = 0.01 chosen to be ~ same order as per-step
+# discovery reward (1/196 ≈ 0.005) so pull and discovery are balanced.
+experiment_name: survey-local-16fast-N5-fog
+
+env:
+  grid_width: 16
+  grid_height: 16
+  num_agents: 5
+  wall_density: 0.0
+  max_steps: 100
+  comm_radius: 5.0
+  obs_radius: 1
+  view_radius: 1
+  survey_radius: 0
+  local_obs: true
+  center_spawn: true
+  normalize_uid: true
+
+network:
+  actor_hidden_dim: 128
+  actor_num_layers: 2
+  critic_hidden_dim: 128
+  critic_num_layers: 2
+  activation: relu
+
+train:
+  method: actor_critic
+  lr: 5.0e-5
+  gamma: 0.99
+  num_episodes: 5000
+  num_seeds: 5
+  ent_coef: 0.01
+  epsilon: 0.01
+  epsilon_final: 0.005
+  ent_coef_final: 0.005
+  anneal_end_frac: 0.5
+  grad_clip: 0.25
+
+reward:
+  disconnect_penalty: 0.0
+  isolation_weight: 0.0
+  cooperative_weight: 0.0
+  revisit_weight: -0.003                  # flat penalty for stepping on known cells
+  spread_weight: 0.0                      # superseded by fog-of-war pull
+  terminal_bonus_scale: 10.0
+  terminal_bonus_divide: true
+  fog_potential_weight: 0.01              # pull toward nearest unknown
+
+enforce_connectivity: true
+
+warm_start: experiments/survey-local-16fast-N1/checkpoint.npz
+warm_start_source_num_agents: 1

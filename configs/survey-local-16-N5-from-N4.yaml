@@ -1,0 +1,54 @@
+# 5 agents on 16x16 — actor-only warm-start from the N=4/16x16 winner.
+#
+# 5 is prime, and 5 % 4 != 0, so direct tile is blocked.  Actor is 1-block
+# decentralized and transfers regardless; the central critic cold-starts and
+# relearns from the transferred policy in a few hundred eps.  Recipe mirrors
+# N=4 16x16 (coop=0.015, revisit=-0.001).  LR cut 5x off the converged source.
+experiment_name: survey-local-16-N5-from-N4
+
+env:
+  grid_width: 16
+  grid_height: 16
+  num_agents: 5
+  wall_density: 0.0
+  max_steps: 250
+  comm_radius: 5.0
+  obs_radius: 1
+  view_radius: 1
+  survey_radius: 0
+  local_obs: true
+  center_spawn: true
+  normalize_uid: true
+
+network:
+  actor_hidden_dim: 128
+  actor_num_layers: 2
+  critic_hidden_dim: 128
+  critic_num_layers: 2
+  activation: relu
+
+train:
+  method: actor_critic
+  lr: 1.0e-5
+  gamma: 0.99
+  num_episodes: 3000
+  num_seeds: 5
+  ent_coef: 0.005
+  epsilon: 0.005
+  epsilon_final: 0.005
+  ent_coef_final: 0.005
+  anneal_end_frac: 0.5
+  grad_clip: 0.25
+
+reward:
+  disconnect_penalty: 0.0
+  isolation_weight: -0.002
+  cooperative_weight: 0.015
+  revisit_weight: -0.001
+  terminal_bonus_scale: 6.0
+  terminal_bonus_divide: true
+
+enforce_connectivity: true
+
+warm_start: experiments/survey-local-16-N4/checkpoint.npz
+warm_start_source_num_agents: 4

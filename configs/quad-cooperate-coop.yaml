@@ -1,0 +1,68 @@
+# Four-agent cooperation on a 14x14 open grid.
+#
+# Scaled from pair-cooperate-coop.yaml. Grid and agent count increase by 2x
+# while keeping per-agent cell density (~49 cells/agent, vs 50 cells/agent for
+# the pair config). Terminal bonus scaled up 2x so per-agent full-coverage
+# bonus stays at +1.0 under divide=true.
+#
+# Scale reference on a 14x14 grid (total_discoverable = 196):
+#   - per self-discovery            = +0.01
+#   - max team self-discovery sum   = +1.96 (all cells discovered once)
+#   - max per-agent terminal bonus  = +1.0  (terminal_scale=4.0, divide=true, N=4)
+#
+# Other notes:
+#   - comm_radius bumped 5.0 -> 7.0 to preserve same fractional reach on the
+#     bigger grid (5.0 / 10 = 7.0 / 14 = 0.5).
+#   - max_steps bumped 100 -> 150 so a single-file visit of 196 cells is
+#     feasible for a 4-agent team (min 49 steps/agent if perfectly divided).
+#   - Central critic input dim = 4 * obs_dim = 4 * 202 = 808. Keep 256x3 MLP
+#     for now; revisit if the critic struggles.
+experiment_name: quad-cooperate-coop
+
+env:
+  grid_width: 14
+  grid_height: 14
+  num_agents: 4
+  wall_density: 0.0
+  max_steps: 150
+  comm_radius: 7.0
+  obs_radius: 0
+  center_spawn: true
+
+network:
+  actor_hidden_dim: 256
+  actor_num_layers: 3
+  critic_hidden_dim: 256
+  critic_num_layers: 3
+  activation: relu
+
+train:
+  method: actor_critic
+  lr: 1.5e-4
+  gamma: 0.99
+  num_episodes: 15000
+  num_seeds: 5
+  ent_coef: 0.05
+  epsilon: 0.05
+  epsilon_final: 0.005
+  ent_coef_final: 0.005
+  anneal_end_frac: 0.5
+  # Tightened from the pair config's 0.5. 3000-ep smoke at 0.5 showed critic
+  # runaway by ep 2000: |loss| p99 grew 8.6 -> 218, reward fell +7.63 -> +4.86.
+  # The central critic now consumes 4x obs_dim = 808 features (vs 212 for N=2),
+  # so the same-capacity 256x3 trunk is more easily destabilised.
+  grad_clip: 0.25
+
+reward:
+  disconnect_penalty: 0.0
+  isolation_weight: -0.002
+  cooperative_weight: 0.015
+  revisit_weight: -0.001
+  # Terminal team-success bonus: scale x coverage_fraction at done, split
+  # evenly across agents. Full coverage -> each agent gets +1.0 (N=4, scale=4.0).
+  # Scaled up 2x from the pair config so the per-agent terminal gradient stays
+  # constant as N doubles.
+  terminal_bonus_scale: 4.0
+  terminal_bonus_divide: true
+
+enforce_connectivity: true

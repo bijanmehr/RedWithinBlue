@@ -1,0 +1,61 @@
+# 7 agents on 16x16 — coop-pull recipe.
+#
+# Companion to survey-local-16-N7-spread.yaml.  Recipe mirrors the N=4 16x16
+# winner (coop=0.015, revisit=-0.001).  N=4 saturated at 97% under this recipe
+# and density at N=7 (2.7%) is closer to N=4 (1.6%) than to N=8/32x32 (0.8%)
+# where spread was required to break the cluster floor.
+#
+# Warm-start constraint (num_blocks % source_num_blocks == 0) restricts the
+# source to N=1 — survey-local-8-N1 is the only available rung.  local_obs=true
+# makes 8x8 -> 16x16 a kernel-level no-op; only N tiling runs.
+#
+# max_steps is 300 (vs 200 at N=4) because 7 agents need headroom to actually
+# complete coverage on 256 cells under the hard guardrail.
+experiment_name: survey-local-16-N7
+
+env:
+  grid_width: 16
+  grid_height: 16
+  num_agents: 7
+  wall_density: 0.0
+  max_steps: 300
+  comm_radius: 5.0
+  obs_radius: 1
+  view_radius: 1
+  survey_radius: 0
+  local_obs: true
+  center_spawn: true
+  normalize_uid: true
+
+network:
+  actor_hidden_dim: 128
+  actor_num_layers: 2
+  critic_hidden_dim: 128
+  critic_num_layers: 2
+  activation: relu
+
+train:
+  method: actor_critic
+  lr: 1.0e-4
+  gamma: 0.99
+  num_episodes: 3000
+  num_seeds: 5
+  ent_coef: 0.01
+  epsilon: 0.01
+  epsilon_final: 0.005
+  ent_coef_final: 0.005
+  anneal_end_frac: 0.5
+  grad_clip: 0.25
+
+reward:
+  disconnect_penalty: 0.0
+  isolation_weight: -0.002
+  cooperative_weight: 0.015
+  revisit_weight: -0.001
+  terminal_bonus_scale: 7.0
+  terminal_bonus_divide: true
+
+enforce_connectivity: true
+
+warm_start: experiments/survey-local-16-N1/checkpoint.npz
+warm_start_source_num_agents: 1

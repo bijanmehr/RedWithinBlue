@@ -1,0 +1,47 @@
+# Four-agent cooperation on a 16x16 open grid — uid-NORMALIZED.
+# Warm-starts both actor and critic from the 8x8 -norm checkpoint.
+# Mirror of quad-cooperate-coop-16.yaml with `env.normalize_uid: true`.
+experiment_name: quad-cooperate-coop-16-norm
+
+env:
+  grid_width: 16
+  grid_height: 16
+  num_agents: 4
+  wall_density: 0.0
+  max_steps: 150
+  comm_radius: 8.0
+  obs_radius: 0
+  center_spawn: true
+  normalize_uid: true             # MUST match source checkpoint.
+
+network:
+  actor_hidden_dim: 256
+  actor_num_layers: 3
+  critic_hidden_dim: 256
+  critic_num_layers: 3
+  activation: relu
+
+train:
+  method: actor_critic
+  lr: 3.0e-5
+  gamma: 0.99
+  num_episodes: 2000
+  num_seeds: 5
+  ent_coef: 0.05
+  epsilon: 0.05
+  epsilon_final: 0.005
+  ent_coef_final: 0.005
+  anneal_end_frac: 0.5
+  grad_clip: 0.25
+
+reward:
+  disconnect_penalty: 0.0
+  isolation_weight: -0.002
+  cooperative_weight: 0.015
+  revisit_weight: -0.001
+  terminal_bonus_scale: 4.0
+  terminal_bonus_divide: true
+
+enforce_connectivity: true
+
+warm_start: experiments/quad-cooperate-coop-8-norm/checkpoint.npz

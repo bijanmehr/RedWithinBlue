@@ -1,0 +1,62 @@
+# Four-agent cooperation on an 8x8 open grid — uid-NORMALIZED restart of
+# the warm-start ladder. Identical to quad-cooperate-coop-8.yaml except
+# `env.normalize_uid: true`.
+#
+# Why this restart exists: the original ladder fed raw uid in {1, 2, 3, 4}
+# into the actor. When we N-mismatch warm-started up to N=8 (octa-32-r6) the
+# actor saw uid in {1, ..., 8}; ReLU networks extrapolate roughly linearly
+# past their training range, so each unseen uid added a per-seed constant
+# to every action logit. Result: each seed latched onto a different side of
+# the grid (left under coop=0.015, top under coop=0, etc.) and ~10 % of the
+# grid was systematically unexplored. With normalize_uid=true the uid
+# feature is divided by num_agents in obs.py — range becomes (0, 1] for
+# every N, eliminating the OOD shift at N transfer time.
+#
+# Cost: this invalidates the raw-uid checkpoint chain. We rebuild the whole
+# ladder from this rung up:
+#   quad-8-norm -> quad-16-norm -> quad-32-norm -> octa-32-r6-norm
+#
+# Everything else (network shape, reward weights, lr schedule, num_episodes)
+# is identical to the raw-uid sibling so the comparison is clean.
+experiment_name: quad-cooperate-coop-8-norm
+
+env:
+  grid_width: 8
+  grid_height: 8
+  num_agents: 4
+  wall_density: 0.0
+  max_steps: 80
+  comm_radius: 4.0
+  obs_radius: 0
+  center_spawn: true
+  normalize_uid: true             # uid -> uid / num_agents in obs tail
+
+network:
+  actor_hidden_dim: 256
+  actor_num_layers: 3
+  critic_hidden_dim: 256
+  critic_num_layers: 3
+  activation: relu
+
+train:
+  method: actor_critic
+  lr: 1.5e-4
+  gamma: 0.99
+  num_episodes: 6000
+  num_seeds: 5
+  ent_coef: 0.05
+  epsilon: 0.05
+  epsilon_final: 0.005
+  ent_coef_final: 0.005
+  anneal_end_frac: 0.5
+  grad_clip: 0.25
+
+reward:
+  disconnect_penalty: 0.0
+  isolation_weight: -0.002
+  cooperative_weight: 0.015
+  revisit_weight: -0.001
+  terminal_bonus_scale: 4.0
+  terminal_bonus_divide: true
+
+enforce_connectivity: true

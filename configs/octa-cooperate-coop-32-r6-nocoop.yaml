@@ -1,0 +1,146 @@
+# Eight-agent cooperation on a 32x32 open grid with TIGHT comm_radius=6. Warm-
+# starts both actor and central critic from the N=4 32x32 checkpoint
+# (quad-cooperate-coop-32) via per-agent block tiling in the grid-aware loader.
+#
+# This is the first N-mismatched transfer in the warm-start ladder:
+#   quad-8 -> quad-16 -> quad-32 (N=4 same-N chain) -> octa-32-r6 (N=4 -> N=8)
+#
+# Transfer path (actor): unchanged from same-N case — Dense_0 kernel
+# [5, 1030, 256] copies verbatim (grid and obs_radius match source).
+#
+# Transfer path (central critic): Dense_0 kernel [5, 4120, 256] is split into
+# source_num_blocks=4 per-agent blocks of [5, 1030, 256], each block is grid-
+# upsampled (no-op here since grid already matches), and the full set of 4
+# blocks is TILED tile_factor=2 times to reach N=8 blocks, yielding
+# [5, 8240, 256]. This is principled because the central critic is symmetric
+# in agent identity — agents are exchangeable, so duplicating the source
+# per-agent slot weights is the minimum-assumption initialisation. Requires
+# num_agents % warm_start_source_num_agents == 0 (8 % 4 = 0 here). Deeper
+# Dense layers are grid/N-invariant and transfer verbatim.
+#
+# Why comm_radius=6 (well below the 0.5 * width = 16 that prior configs used):
+#   - The user specifically requested comm_radius=6 to force a qualitatively
+#     harder connectivity problem: with 8 agents on a 32x32 grid and reach=6,
+#     agents cannot all mutually see each other; they must form a connected
+#     swarm rather than a loose flock. This is a deliberate stress test of
+#     the learned cooperation pattern under tight communication constraints.
+#
+# Caveat: distribution shift on the actor's uid feature.
+#   The actor was trained with uid in {1, 2, 3, 4} and will see {1, ..., 8}
+#   with N=8. Observations are not renormalised (uid is embedded as a raw
+#   float in the tail). ReLU networks extrapolate roughly linearly beyond
+#   their training range, so it is not catastrophic, but expect some seed
+#   variance in the pre-training diagnostic. This is acceptable — the goal
+#   of the warm-start is a reasonable *prior* on 8-agent behaviour, not a
+#   perfect N=8 policy. Fine-tune corrects the residual drift.
+#
+# Why scale=8.0 (not 4.0 like the source):
+#   The source (quad-32) used terminal_bonus_scale=4.0 with divide=true, giving
+#   per-agent terminal = 1.0. Preserving per-agent terminal magnitude when we
+#   double N preserves the per-agent reward distribution the warm-started
+#   actor learned. scale=8.0 divide=true with N=8 -> per-agent terminal = 1.0.
+#   Team-total terminal doubles (4.0 -> 8.0), which the critic must adapt to
+#   during the gentle fine-tune — this is the main thing the critic is being
+#   asked to learn.
+#
+# Scaling rationale vs quad-cooperate-coop-32.yaml:
+#   - grid 32x32 unchanged -> obs_dim unchanged (1030) -> actor transfers verbatim.
+#   - num_agents 4 -> 8 : critic input axis doubles via tile (4120 -> 8240).
+#   - comm_radius 16 -> 6 : qualitatively different connectivity regime.
+#   - max_steps 400 unchanged : 8 agents * 400 steps = plenty of coverage budget.
+#   - critic_hidden_dim 256 unchanged : MUST match source for critic transfer.
+#   - Fine-tune recipe identical to the quad-32 ultra-gentle recipe
+#     (lr=1e-5, 500 eps, ent_coef/epsilon pinned at 0.005 floor).
+#
+# Scale reference on a 32x32 grid with N=8:
+#   - per self-discovery             = +0.01
+#   - max team self-discovery sum    = +10.24 (all cells discovered once)
+#   - max cooperative bonus per cell = 0.015 * (up to 7 neighbours if all in
+#                                      comm range, typically fewer at r=6)
+#   - terminal bonus at full coverage = +8.0 team total (N=8 * +1.0/agent)
+#   - realistic team return          = unknown; first experiment at this regime.
+experiment_name: octa-cooperate-coop-32-r6-nocoop
+# ABLATION (vs sibling octa-cooperate-coop-32-r6.yaml):
+#   cooperative_weight: 0.015 -> 0.0
+# Tests the diagnosis that the cluster-tethering reward gradient (per-discovery
+# bonus x num_in-range neighbours) was the binding constraint preventing
+# coverage at comm_radius=6. Everything else identical, including the warm-
+# start path. Warm-started weights still encode cluster behavior (they were
+# trained with coop=0.015), so the eval+train under coop=0 measures how much
+# of the cluster bias is reward-pinned vs. weight-pinned.
+
+env:
+  grid_width: 32
+  grid_height: 32
+  num_agents: 8
+  wall_density: 0.0
+  max_steps: 400
+  comm_radius: 6.0
+  obs_radius: 0
+  center_spawn: true
+
+network:
+  actor_hidden_dim: 256         # MUST match source checkpoint (quad-32).
+  actor_num_layers: 3           # MUST match source checkpoint.
+  critic_hidden_dim: 256        # MUST match source so critic can warm-start.
+  critic_num_layers: 3
+  activation: relu              # MUST match source checkpoint.
+
+train:
+  method: actor_critic
+  # Ultra-gentle fine-tune, same recipe as quad-32 final. The mismatched-N
+  # critic transfer (tile x2) introduces larger initial value-prediction error
+  # than the same-N case, so we rely even more heavily on the low LR.
+  #
+  # Outcome (2026-04-18): the lr=1e-5, 500-ep recipe DEGRADED the warm-start
+  # at this regime. Pre-training diagnostic was sample-pi mean +15.35 (all
+  # 5 seeds in [+13.18, +18.37]); after fine-tune the mean was +11.71 with
+  # one seed collapsing to +5.38 ([+5.38, +17.52]). Best-seed coverage
+  # essentially unchanged (41.9% -> 41.1%). Same pattern as quad-32 but
+  # more severe — the tiled critic produces larger TD errors that even the
+  # ultra-gentle LR can't fully absorb in 500 eps.
+  #
+  # The trained checkpoint is preserved at experiments/octa-cooperate-coop-
+  # 32-r6/checkpoint_trained.npz (+ eval_trained.txt). The canonical
+  # checkpoint.npz IS the raw warm-start (saved via
+  # /tmp/save_warm_start_as_checkpoint.py). For N-mismatched transfer the
+  # warm-start strictly dominates this fine-tune recipe — so this train
+  # block is kept for reproducibility / negative-result documentation, not
+  # as the recommended path. To skip training entirely, run
+  # `python /tmp/save_warm_start_as_checkpoint.py configs/octa-cooperate-
+  # coop-32-r6.yaml` and call `render_experiment.py` directly.
+  #
+  # Future work for this regime: try lr=3e-6 (3x more gentle), or freeze
+  # the critic for the first ~200 eps so the TD targets stabilise around
+  # the new N=8 reward distribution before policy gradients flow. Both are
+  # principled responses to "the tiled critic is the source of the noise".
+  lr: 1.0e-5
+  gamma: 0.99
+  num_episodes: 500
+  num_seeds: 5
+  ent_coef: 0.005
+  epsilon: 0.005
+  epsilon_final: 0.005
+  ent_coef_final: 0.005
+  anneal_end_frac: 0.5
+  grad_clip: 0.25
+
+reward:
+  disconnect_penalty: 0.0
+  isolation_weight: -0.002
+  cooperative_weight: 0.0     # ABLATION: was 0.015. See header note.
+  revisit_weight: -0.001
+  # scale=8.0 with divide=true and N=8 -> per-agent terminal = 1.0, preserving
+  # the per-agent reward magnitude the warm-started actor learned under N=4.
+  # Team-total terminal is +8.0 (double the source's +4.0) — the critic needs
+  # to adapt its value-prediction scale during fine-tune.
+  terminal_bonus_scale: 8.0
+  terminal_bonus_divide: true
+
+enforce_connectivity: true
+
+# Warm-start: actor + central critic come from the N=4 32x32 checkpoint via
+# the grid-aware loader with per-agent block tiling. num_agents=8 must be an
+# integer multiple of warm_start_source_num_agents=4.
+warm_start: experiments/quad-cooperate-coop-32/checkpoint.npz
+warm_start_source_num_agents: 4

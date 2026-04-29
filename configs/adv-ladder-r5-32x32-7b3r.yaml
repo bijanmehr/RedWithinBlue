@@ -1,0 +1,60 @@
+# Adversarial ladder, RUNG 5 — 32x32, 7 blue vs 3 red. Warm-start blue actor
+# from rung 4 (16x16 4b3r); per-block obs is grid-invariant under
+# local_obs=true so 16x16 -> 32x32 is just N tiling, no spatial upsample.
+#
+# Same n_red as rung 4 (3) but joint-red trainer doesn't warm-start red AND
+# per-grid obs_dim differs anyway, so red is fresh.
+#
+# This is the first rung where 7-agent blue spread + 3-red harassment really
+# stresses the comm graph at long range. Expect heavy guardrail-forced STAYs.
+experiment_name: adv-ladder-r5-32x32-7b3r
+
+env:
+  grid_width: 32
+  grid_height: 32
+  num_agents: 10           # 7 blue + 3 red
+  num_red_agents: 3
+  wall_density: 0.0
+  max_steps: 300           # 32x32 = 1024 cells; ~43 cells per blue at N=7
+  comm_radius: 6.0
+  obs_radius: 1
+  view_radius: 1
+  survey_radius: 0
+  local_obs: true
+  center_spawn: true
+  normalize_uid: true
+
+network:
+  actor_hidden_dim: 128
+  actor_num_layers: 2
+  critic_hidden_dim: 128
+  critic_num_layers: 2
+  activation: relu
+
+train:
+  method: reinforce
+  red_policy: joint
+  red_hidden_dim: 128
+  red_num_layers: 2
+  red_pretrain_episodes: 0
+  lr: 1.0e-4
+  gamma: 0.99
+  num_episodes: 20000
+  num_seeds: 2
+  ent_coef: 0.05
+  grad_clip: 0.5
+
+reward:
+  disconnect_penalty: 0.0
+  isolation_weight: 0.0
+  cooperative_weight: 0.0
+  revisit_weight: 0.0
+  spread_weight: 0.0
+  terminal_bonus_scale: 10.0
+  terminal_bonus_divide: true
+  fog_potential_weight: 0.1
+
+enforce_connectivity: true
+
+warm_start: experiments/adv-ladder-r4-16x16-4b3r/checkpoint.npz
+warm_start_source_num_agents: 7

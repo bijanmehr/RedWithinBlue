@@ -1,0 +1,97 @@
+# Pair cooperation tuned for collaborative exploration.
+#
+# Design goal: encourage agents to DIVIDE the map (cover different cells)
+# while STAYING CONNECTED (to share scans via comm_radius).
+#
+# Changes vs the collapsed 5000-ep run:
+#   - CTDE actor-critic (shared policy + central critic on joint obs)
+#   - ent_coef 0.01 -> 0.05: stronger exploration pressure, keeps pi
+#     stochastic past the point the previous run determinised.
+#   - epsilon: 0.05 coin-flip exploration on top of pi. Cheap backup when
+#     the entropy bonus alone isn't enough.
+#   - revisit_weight -0.003 -> -0.001: obs_radius=0 means agents can't
+#     see where they've been, so the old penalty was punishing ignorance.
+#   - terminal_bonus_scale 1.0 -> 2.0: sharper end-of-episode gradient
+#     pointing at coverage.
+#   - wider/deeper networks: 128->256, 2->3 layers. The central critic
+#     ingests [N*obs_dim] = 212 features; the old 128x2 trunk was thin.
+#
+# Scale reference on a 10x10 grid (total_discoverable = 100):
+#   - per self-discovery            = +0.01
+#   - max solo episodic return      =  1.0 (all cells)
+#   - realistic solo return         =  0.5 - 0.7
+experiment_name: pair-cooperate-coop
+
+env:
+  grid_width: 10
+  grid_height: 10
+  num_agents: 2
+  wall_density: 0.0
+  max_steps: 100
+  comm_radius: 5.0
+  obs_radius: 0
+  center_spawn: true
+
+network:
+  actor_hidden_dim: 256
+  actor_num_layers: 3
+  critic_hidden_dim: 256
+  critic_num_layers: 3
+
+train:
+  method: actor_critic
+  lr: 1.5e-4
+  gamma: 0.99
+  num_episodes: 15000
+  num_seeds: 5
+  ent_coef: 0.05
+  # Per-step probability each agent replaces pi's sample with a uniform
+  # action. Noise floor exploration — negligibly off-policy for eps <= 0.1.
+  epsilon: 0.05
+  # Anneal schedule: linear from initial -> *_final over the first
+  # anneal_end_frac * num_episodes episodes, then hold at final. With
+  # anneal_end_frac=0.5 the policy has the second half of training at near-
+  # zero entropy/epsilon to sharpen toward a good argmax. Prior run with
+  # anneal_end_frac=1.0 improved stochastic reward +2.36 -> +2.81 but kept
+  # deterministic (argmax) reward at +0.84 because the policy never had
+  # enough steps at low ent_coef to commit to argmax.
+  epsilon_final: 0.005
+  ent_coef_final: 0.005
+  anneal_end_frac: 0.5
+  # Global-norm gradient clip on both actor and critic updates. The 15000-ep
+  # run without clipping collapsed: reward +2.07 -> +0.35 by ep 1500, then
+  # |loss| climbed 0.08 -> 196 as the central critic diverged. 0.5 is the
+  # standard defense against runaway value loss in actor-critic.
+  grad_clip: 0.5
+
+reward:
+  # Starting connected (center_spawn), so the blunt full-graph gate is off.
+  disconnect_penalty: 0.0
+
+  # Per-agent loneliness penalty: -0.002/step when degree==0.
+  # Worst case -0.4 per agent per episode; kicks in only if an agent
+  # actually wanders out of comm range.
+  isolation_weight: -0.002
+
+  # Neighbour discovery bonus: 1.5x the self-discovery scale.
+  # When both agents are connected and one finds a new cell, team reward
+  # for that event = +0.01 (discoverer) + 0.015 (receiver) = 0.025, a 2.5x
+  # multiplier vs solo. Strong pull to stay in range, but divided coverage
+  # still dominates (staying in range AND overlapping cells yields only
+  # the coop bonus, not the self-reward).
+  cooperative_weight: 0.015
+
+  # Revisit penalty: -0.001 (1/10 of discovery magnitude). Softer than
+  # the first attempt because obs_radius=0 makes revisits partly
+  # unavoidable. Keeps a gentle nudge toward frontier cells without
+  # punishing blind transit through known territory.
+  revisit_weight: -0.001
+
+  # Terminal team-success bonus: 2.0 x coverage_fraction at done, split
+  # evenly across agents. Full coverage -> each agent gets +1.0 (N=2).
+  # Doubled to dominate late-training noise and provide a clean gradient
+  # toward full coverage at episode end.
+  terminal_bonus_scale: 2.0
+  terminal_bonus_divide: true
+
+enforce_connectivity: true

@@ -1,0 +1,60 @@
+# Adversarial ladder, RUNG 4 — 16x16, 4 blue vs 3 red. Warm-start blue actor
+# from rung 3 (16x16 3b1r); SAME grid this time so the upsample is a no-op,
+# only N changes (3 blue -> 4 blue).
+#
+# Red MUST be fresh: jumping 1 -> 3 reds reshapes the JointRedActor's input
+# (n_red * obs_dim concatenation), so the prior red checkpoint is not
+# shape-compatible. With 3 cooperating reds against 4 blue, we expect to see
+# the strongest mission-denial behaviour of the ladder — coordinated fogging
+# rather than the lone-stalker pattern of rungs 1-3.
+experiment_name: adv-ladder-r4-16x16-4b3r
+
+env:
+  grid_width: 16
+  grid_height: 16
+  num_agents: 7            # 4 blue + 3 red
+  num_red_agents: 3
+  wall_density: 0.0
+  max_steps: 100
+  comm_radius: 5.0
+  obs_radius: 1
+  view_radius: 1
+  survey_radius: 0
+  local_obs: true
+  center_spawn: true
+  normalize_uid: true
+
+network:
+  actor_hidden_dim: 128
+  actor_num_layers: 2
+  critic_hidden_dim: 128
+  critic_num_layers: 2
+  activation: relu
+
+train:
+  method: reinforce
+  red_policy: joint
+  red_hidden_dim: 128
+  red_num_layers: 2
+  red_pretrain_episodes: 0
+  lr: 1.0e-4
+  gamma: 0.99
+  num_episodes: 15000       # bigger N + bigger red team -> more eps to converge
+  num_seeds: 2
+  ent_coef: 0.05
+  grad_clip: 0.5
+
+reward:
+  disconnect_penalty: 0.0
+  isolation_weight: 0.0
+  cooperative_weight: 0.0
+  revisit_weight: 0.0
+  spread_weight: 0.0
+  terminal_bonus_scale: 10.0
+  terminal_bonus_divide: true
+  fog_potential_weight: 0.1
+
+enforce_connectivity: true
+
+warm_start: experiments/adv-ladder-r3-16x16-3b1r/checkpoint.npz
+warm_start_source_num_agents: 4

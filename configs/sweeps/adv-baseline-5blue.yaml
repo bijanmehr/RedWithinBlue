@@ -1,0 +1,25 @@
+# Adversarial Phase 1 — BASELINE-COOP ceiling for N=5 blue, 0 red.
+# 32x32, warm-started from solo-explore.
+experiment_name: adv-baseline-5blue
+env:
+  grid_width: 32
+  grid_height: 32
+  num_agents: 5
+  num_red_agents: 0
+  wall_density: 0.0
+  max_steps: 768
+  comm_radius: 5.0
+network:
+  actor_hidden_dim: 128
+  actor_num_layers: 2
+  critic_hidden_dim: 128
+  critic_num_layers: 2
+train:
+  method: reinforce
+  lr: 5.0e-4
+  gamma: 0.90
+  num_episodes: 1500
+  num_seeds: 5
+  red_policy: shared
+enforce_connectivity: false
+warm_start: experiments/solo-explore/checkpoint.npz

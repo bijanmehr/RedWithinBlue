@@ -1,0 +1,66 @@
+# Four-agent cooperation on an 8x8 open grid. Training-from-scratch source
+# for the warm-start pipeline smoke test:
+#   quad-cooperate-coop-8 (train from scratch)  ->  quad-cooperate-coop-16 (warm-start)
+#
+# This config deliberately undershoots a full experiment — its job is to
+# produce a usable checkpoint in ~3-5 minutes wall-clock so we can exercise
+# the grid-aware warm-start end-to-end (actor + central critic transfer) in
+# under ~15 minutes total, vs. the 45-90 minute 32x32 production run.
+#
+# Scale reference on an 8x8 grid (1-cell wall border -> 6x6 = 36 playable cells):
+#   - per self-discovery             = +0.01
+#   - max team self-discovery sum    = +0.36 (all playable cells discovered once)
+#   - max cooperative bonus sum      = ~+1.6 (0.015 * 36 * 3 receiving neighbours)
+#   - terminal bonus at full coverage = +4.0 team total (N=4 * +1.0/agent)
+#   - realistic team return          = ~+2 to +5
+#
+# Scaling from quad-cooperate-coop.yaml (14x14):
+#   - grid 14 -> 8   : 0.18x the playable cells; structurally a much easier task.
+#   - max_steps 150 -> 80 : still ~2x the min steps to cover all 36 cells if
+#     perfectly divided (9 cells/agent); loose enough for the policy to err.
+#   - comm_radius 7.0 -> 4.0 : keeps radius/width = 0.5 (same fractional reach).
+#   - num_episodes 15000 -> 6000 : small grid learns fast; enough for a usable
+#     checkpoint, not a production headline.
+#   - network shape, reward weights, lr, ent/eps annealing all unchanged so
+#     the checkpoint is drop-in compatible with the 16x16 warm-start target.
+experiment_name: quad-cooperate-coop-8
+
+env:
+  grid_width: 8
+  grid_height: 8
+  num_agents: 4
+  wall_density: 0.0
+  max_steps: 80
+  comm_radius: 4.0
+  obs_radius: 0
+  center_spawn: true
+
+network:
+  actor_hidden_dim: 256
+  actor_num_layers: 3
+  critic_hidden_dim: 256
+  critic_num_layers: 3
+  activation: relu
+
+train:
+  method: actor_critic
+  lr: 1.5e-4
+  gamma: 0.99
+  num_episodes: 6000
+  num_seeds: 5
+  ent_coef: 0.05
+  epsilon: 0.05
+  epsilon_final: 0.005
+  ent_coef_final: 0.005
+  anneal_end_frac: 0.5
+  grad_clip: 0.25
+
+reward:
+  disconnect_penalty: 0.0
+  isolation_weight: -0.002
+  cooperative_weight: 0.015
+  revisit_weight: -0.001
+  terminal_bonus_scale: 4.0
+  terminal_bonus_divide: true
+
+enforce_connectivity: true

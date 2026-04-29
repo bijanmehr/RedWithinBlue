@@ -1,0 +1,57 @@
+# Eight-agent cooperation on a 32x32 open grid with comm_radius=6 —
+# uid-NORMALIZED. Warm-starts from the N=4 32x32 -norm checkpoint via
+# per-agent block tiling (same mechanism as octa-cooperate-coop-32-r6).
+#
+# Key difference from the raw-uid sibling: because the ladder was trained
+# with normalize_uid=true from the ground up, uid at every rung lies in
+# (0, 1]. When we transfer N=4 -> N=8 the uid feature shifts from
+# {0.25, 0.5, 0.75, 1.0} to {0.125, 0.25, ..., 1.0} — still inside the
+# training range of the deeper ReLU layers, so the per-seed geographic
+# bias that motivated this rebuild should not appear.
+#
+# Mirror of octa-cooperate-coop-32-r6.yaml with `env.normalize_uid: true`.
+experiment_name: octa-cooperate-coop-32-r6-norm
+
+env:
+  grid_width: 32
+  grid_height: 32
+  num_agents: 8
+  wall_density: 0.0
+  max_steps: 400
+  comm_radius: 6.0
+  obs_radius: 0
+  center_spawn: true
+  normalize_uid: true             # MUST match source checkpoint.
+
+network:
+  actor_hidden_dim: 256
+  actor_num_layers: 3
+  critic_hidden_dim: 256
+  critic_num_layers: 3
+  activation: relu
+
+train:
+  method: actor_critic
+  lr: 1.0e-5
+  gamma: 0.99
+  num_episodes: 500
+  num_seeds: 5
+  ent_coef: 0.005
+  epsilon: 0.005
+  epsilon_final: 0.005
+  ent_coef_final: 0.005
+  anneal_end_frac: 0.5
+  grad_clip: 0.25
+
+reward:
+  disconnect_penalty: 0.0
+  isolation_weight: -0.002
+  cooperative_weight: 0.015
+  revisit_weight: -0.001
+  terminal_bonus_scale: 8.0
+  terminal_bonus_divide: true
+
+enforce_connectivity: true
+
+warm_start: experiments/quad-cooperate-coop-32-norm/checkpoint.npz
+warm_start_source_num_agents: 4

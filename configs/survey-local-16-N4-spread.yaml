@@ -1,0 +1,54 @@
+# Reward-engineering variant of survey-local-16-N4.yaml.
+#
+# Backports the N=8 spread-reward recipe to 16×16 / N=4 to check whether the
+# baseline (which already hit 97% coverage with coop=0.015) improves, stays
+# flat, or regresses when the cluster-pull is replaced with a spread-push.
+experiment_name: survey-local-16-N4-spread
+
+env:
+  grid_width: 16
+  grid_height: 16
+  num_agents: 4
+  wall_density: 0.0
+  max_steps: 200
+  comm_radius: 5.0
+  obs_radius: 1
+  view_radius: 1
+  survey_radius: 0
+  local_obs: true
+  center_spawn: true
+  normalize_uid: true
+
+network:
+  actor_hidden_dim: 128
+  actor_num_layers: 2
+  critic_hidden_dim: 128
+  critic_num_layers: 2
+  activation: relu
+
+train:
+  method: actor_critic
+  lr: 5.0e-5
+  gamma: 0.99
+  num_episodes: 2000
+  num_seeds: 5
+  ent_coef: 0.01
+  epsilon: 0.005
+  epsilon_final: 0.005
+  ent_coef_final: 0.005
+  anneal_end_frac: 0.5
+  grad_clip: 0.25
+
+reward:
+  disconnect_penalty: 0.0
+  isolation_weight: 0.0
+  cooperative_weight: 0.0
+  revisit_weight: -0.005
+  spread_weight: 0.003
+  terminal_bonus_scale: 6.0
+  terminal_bonus_divide: true
+
+enforce_connectivity: true
+
+warm_start: experiments/survey-local-8-N2/checkpoint.npz
+warm_start_source_num_agents: 2

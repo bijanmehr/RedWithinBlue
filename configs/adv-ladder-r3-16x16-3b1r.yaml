@@ -1,0 +1,56 @@
+# Adversarial ladder, RUNG 3 — 16x16, 3 blue vs 1 red. Warm-start blue actor
+# from rung 2 (8x8 2b1r); grid upsample handles 8x8 -> 16x16.
+#
+# Comm range scales up (16x16 needs longer reach to keep 3 blue connected).
+# Red still fresh.
+experiment_name: adv-ladder-r3-16x16-3b1r
+
+env:
+  grid_width: 16
+  grid_height: 16
+  num_agents: 4            # 3 blue + 1 red
+  num_red_agents: 1
+  wall_density: 0.0
+  max_steps: 100
+  comm_radius: 5.0
+  obs_radius: 1
+  view_radius: 1
+  survey_radius: 0
+  local_obs: true
+  center_spawn: true
+  normalize_uid: true
+
+network:
+  actor_hidden_dim: 128
+  actor_num_layers: 2
+  critic_hidden_dim: 128
+  critic_num_layers: 2
+  activation: relu
+
+train:
+  method: reinforce
+  red_policy: joint
+  red_hidden_dim: 128
+  red_num_layers: 2
+  red_pretrain_episodes: 0
+  lr: 1.0e-4
+  gamma: 0.99
+  num_episodes: 10000
+  num_seeds: 2
+  ent_coef: 0.05
+  grad_clip: 0.5
+
+reward:
+  disconnect_penalty: 0.0
+  isolation_weight: 0.0
+  cooperative_weight: 0.0
+  revisit_weight: 0.0
+  spread_weight: 0.0
+  terminal_bonus_scale: 10.0
+  terminal_bonus_divide: true
+  fog_potential_weight: 0.1
+
+enforce_connectivity: true
+
+warm_start: experiments/adv-ladder-r2-8x8-2b1r/checkpoint.npz
+warm_start_source_num_agents: 3
