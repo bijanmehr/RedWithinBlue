@@ -108,22 +108,25 @@ class TestLossDecreases:
     """Train for 50 episodes and check loss trend."""
 
     @pytest.mark.slow
-    def test_loss_trend(self):
+    def test_reward_trend(self):
+        """End-to-end smoke test: reward should improve over 50 episodes.
+
+        The combined actor-critic loss is not a reliable learning signal
+        (critic MSE grows as returns become non-zero as the policy improves),
+        so we check reward trend directly.
+        """
         cfg = _small_config(method="actor_critic", num_episodes=50)
         train_fn = make_train(cfg)
         key = jax.random.PRNGKey(42)
         _, _, metrics = train_fn(key)
 
-        loss = metrics["loss"]
-        first_10 = jnp.mean(loss[:10])
-        last_10 = jnp.mean(loss[-10:])
+        assert jnp.all(jnp.isfinite(metrics["loss"])), "loss went NaN/inf"
 
-        # The loss should generally decrease. We allow some slack: the last
-        # 10 episodes should have lower mean loss than the first 10.
-        # If this fails intermittently, the test is still valuable as a
-        # smoke test that training runs end-to-end.
-        assert last_10 < first_10, (
-            f"Loss did not decrease: first_10={first_10:.4f}, last_10={last_10:.4f}"
+        reward = metrics["total_reward"]
+        first_10 = jnp.mean(reward[:10])
+        last_10 = jnp.mean(reward[-10:])
+        assert last_10 > first_10, (
+            f"Reward did not improve: first_10={first_10:.4f}, last_10={last_10:.4f}"
         )
 
 
@@ -201,3 +204,80 @@ class TestMultiAgent:
 
         assert critic_params is None
         assert metrics["loss"].shape == (5,)
+
+
+class TestJointRedNashDiagnostics:
+    """The joint-red trainer must emit per-team entropy and reward duality
+    metrics so the report can render the Nash & duality plots."""
+
+    def _cfg(self, **train_overrides):
+        train_kwargs = dict(
+            method="reinforce",
+            lr=3e-3,
+            gamma=0.9,
+            vf_coef=0.5,
+            num_episodes=4,
+            num_seeds=1,
+            red_policy="joint",
+            red_hidden_dim=16,
+            red_num_layers=1,
+        )
+        train_kwargs.update(train_overrides)
+        return ExperimentConfig(
+            env=EnvParams(
+                grid_width=4,
+                grid_height=4,
+                num_agents=3,
+                num_red_agents=1,
+                wall_density=0.0,
+                max_steps=20,
+                comm_radius=3.0,
+            ),
+            network=NetworkParams(
+                actor_hidden_dim=32,
+                actor_num_layers=1,
+                critic_hidden_dim=32,
+                critic_num_layers=1,
+            ),
+            train=TrainParams(**train_kwargs),
+            reward=RewardParams(disconnect_penalty=-0.5),
+            enforce_connectivity=False,
+        )
+
+    def test_metrics_include_per_team_entropy_and_duality(self):
+        cfg = self._cfg()
+        train_fn = make_train(cfg)
+        key = jax.random.PRNGKey(30)
+        _, red_params, metrics = train_fn(key)
+
+        assert red_params is not None
+        for k in (
+            "blue_total_reward", "red_total_reward",
+            "blue_policy_entropy", "red_policy_entropy",
+            "duality_violation",
+        ):
+            assert k in metrics, f"missing metric {k}"
+            assert metrics[k].shape == (cfg.train.num_episodes,)
+
+        # Entropies are non-negative (Shannon entropy in nats over a finite
+        # action set; bounded above by log(num_actions)).
+        assert bool(jnp.all(metrics["blue_policy_entropy"] >= 0.0))
+        assert bool(jnp.all(metrics["red_policy_entropy"] >= 0.0))
+
+    def test_zero_sum_holds_per_episode(self):
+        """Per-episode blue+red total reward sums to ~0 (zero-sum overlay)."""
+        cfg = self._cfg()
+        train_fn = make_train(cfg)
+        _, _, metrics = train_fn(jax.random.PRNGKey(31))
+        violation = float(jnp.max(jnp.asarray(metrics["duality_violation"])))
+        assert violation < 1e-4, f"zero-sum broken, max |blue+red|={violation}"
+
+    def test_pretrain_then_joint(self):
+        """red_pretrain_episodes runs without error and metrics still emit."""
+        cfg = self._cfg(red_pretrain_episodes=2)
+        train_fn = make_train(cfg)
+        _, _, metrics = train_fn(jax.random.PRNGKey(32))
+        # Pretrain episodes are concatenated in front of joint episodes.
+        total = cfg.train.red_pretrain_episodes + cfg.train.num_episodes
+        assert metrics["blue_policy_entropy"].shape == (total,)
+        assert metrics["red_policy_entropy"].shape == (total,)

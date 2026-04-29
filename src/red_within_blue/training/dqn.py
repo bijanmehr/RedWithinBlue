@@ -54,7 +54,7 @@ def dqn_loss(
     Args:
         model: Flax QNetwork module.
         params: Model parameters.
-        observations: Batch of observations, shape [B, 255].
+        observations: Batch of observations, shape [B, obs_dim].
         actions: Batch of integer actions taken, shape [B].
         targets: Batch of TD targets, shape [B].
 
@@ -83,7 +83,7 @@ def compute_dqn_targets(
         model: Flax QNetwork module.
         target_params: Parameters of the frozen target network.
         rewards: Batch of rewards, shape [B].
-        next_observations: Batch of next observations, shape [B, 255].
+        next_observations: Batch of next observations, shape [B, obs_dim].
         dones: Batch of done flags (float or bool), shape [B].
         gamma: Discount factor.
 

@@ -1,0 +1,24 @@
+Coevo on compromise-16x16-5-4b1r: POP=8 TOPK=2 GENS=20 EPS_PER_PAIR=2  n_blue=4 n_red=1
+Loading warm-start blue from experiments/survey-local-16-N5-from-N4/checkpoint.npz
+gen 00  t=1.9s  best_blue=+1.743 mean_blue=+1.481  best_red=-4.801 mean_red=-5.926
+gen 01  t=0.8s  best_blue=+1.652 mean_blue=+1.258  best_red=-4.121 mean_red=-5.031
+gen 02  t=1.0s  best_blue=+1.539 mean_blue=+1.263  best_red=-4.128 mean_red=-5.052
+gen 03  t=0.9s  best_blue=+1.674 mean_blue=+1.174  best_red=-4.110 mean_red=-4.696
+gen 04  t=0.9s  best_blue=+1.419 mean_blue=+1.219  best_red=-4.272 mean_red=-4.876
+gen 05  t=0.9s  best_blue=+1.518 mean_blue=+1.292  best_red=-4.800 mean_red=-5.166
+gen 06  t=0.9s  best_blue=+1.426 mean_blue=+1.154  best_red=-3.773 mean_red=-4.617
+gen 07  t=0.9s  best_blue=+1.415 mean_blue=+1.138  best_red=-3.861 mean_red=-4.553
+gen 08  t=0.9s  best_blue=+1.583 mean_blue=+1.290  best_red=-4.673 mean_red=-5.158
+gen 09  t=0.9s  best_blue=+1.445 mean_blue=+1.166  best_red=-3.818 mean_red=-4.665
+gen 10  t=0.9s  best_blue=+1.526 mean_blue=+1.002  best_red=-3.504 mean_red=-4.006
+gen 11  t=0.9s  best_blue=+1.527 mean_blue=+1.068  best_red=-3.297 mean_red=-4.272
+gen 12  t=0.9s  best_blue=+1.323 mean_blue=+1.004  best_red=-3.400 mean_red=-4.016
+gen 13  t=0.9s  best_blue=+1.590 mean_blue=+1.022  best_red=-3.508 mean_red=-4.086
+gen 14  t=0.9s  best_blue=+1.500 mean_blue=+0.901  best_red=-2.985 mean_red=-3.605
+gen 15  t=0.9s  best_blue=+1.460 mean_blue=+1.147  best_red=-4.217 mean_red=-4.590
+gen 16  t=0.9s  best_blue=+1.387 mean_blue=+1.077  best_red=-4.044 mean_red=-4.306
+gen 17  t=0.9s  best_blue=+1.472 mean_blue=+1.139  best_red=-4.042 mean_red=-4.554
+gen 18  t=0.9s  best_blue=+1.359 mean_blue=+1.017  best_red=-3.832 mean_red=-4.069
+gen 19  t=0.9s  best_blue=+1.447 mean_blue=+0.980  best_red=-3.046 mean_red=-3.919
+
+Saved to experiments/compromise-16x16-5-4b1r-coevo

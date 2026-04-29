@@ -1,0 +1,32 @@
+{
+  "B": {
+    "T_70": 35,
+    "T_80": 50,
+    "T_90": 85,
+    "T_95": 132,
+    "final_coverage": 100.0,
+    "n_steps": 200,
+    "final_currently_known": 100.0,
+    "final_fogged_gap_pp": 0.0
+  },
+  "C1": {
+    "T_70": 83,
+    "T_80": 100,
+    "T_90": 120,
+    "T_95": null,
+    "final_coverage": 94.38775510204081,
+    "n_steps": 200,
+    "final_currently_known": 94.38775510204081,
+    "final_fogged_gap_pp": 0.0
+  },
+  "C2": {
+    "T_70": 78,
+    "T_80": 94,
+    "T_90": null,
+    "T_95": null,
+    "final_coverage": 89.79591836734694,
+    "n_steps": 200,
+    "final_currently_known": 88.77551020408163,
+    "final_fogged_gap_pp": 1.0204081632653157
+  }
+}

@@ -152,3 +152,41 @@ def update_exploration(
     cols = positions[:, 1]
     explored = explored.at[rows, cols].add(1)
     return explored
+
+
+def apply_red_contamination(
+    explored: jax.Array,
+    positions: jax.Array,
+    num_red_agents: int,
+) -> jax.Array:
+    """Reset the ground-truth visit counter at red-occupied cells.
+
+    Models reds as adversaries that fog cells they pass through: after the
+    standard ``+1`` exploration update, each cell currently occupied by a
+    red is set back to ``explored == 0``. The reward functions read
+    ``prev_explored`` to judge "was this cell previously known?" — zeroing
+    red cells re-opens them to blue discovery bonuses.
+
+    Per-agent ``local_map`` fog is handled separately by the team-asymmetric
+    message propagation in :func:`agents.update_local_maps_with_comm`, which
+    overwrites a *blue* receiver's local_map cells with ``MAP_UNKNOWN`` when
+    the sender is red — so only comm-connected blues get their belief erased.
+
+    No-op when ``num_red_agents == 0`` (the scatter is skipped entirely,
+    leaving the input bit-identical to the standard pipeline).
+
+    Args:
+        explored:        [H, W] int32 visit-count map (post +1 update).
+        positions:       [N, 2] int32 post-move agent positions.
+        num_red_agents:  Python int — reds occupy the last ``num_red_agents``
+                         indices of ``positions``.
+
+    Returns:
+        ``explored`` with red cells zeroed.
+    """
+    if num_red_agents == 0:
+        return explored
+    red_positions = positions[-num_red_agents:]   # [n_red, 2]
+    red_rows = red_positions[:, 0]
+    red_cols = red_positions[:, 1]
+    return explored.at[red_rows, red_cols].set(jnp.int32(0))

@@ -1,0 +1,23 @@
+{
+  "B": {
+    "blue_final_H_mean": 1.294378399848938,
+    "blue_final_H_std": 0.08556005358695984,
+    "red_final_H_mean": null,
+    "blue_traj_H_mean": 1.040561318397522,
+    "red_traj_H_mean": null
+  },
+  "C1": {
+    "blue_final_H_mean": 1.0688424110412598,
+    "blue_final_H_std": 0.29007092118263245,
+    "red_final_H_mean": 0.858951210975647,
+    "blue_traj_H_mean": 1.0373358726501465,
+    "red_traj_H_mean": 0.8331601023674011
+  },
+  "C2": {
+    "blue_final_H_mean": 0.9168961048126221,
+    "blue_final_H_std": 0.2295086532831192,
+    "red_final_H_mean": 0.43391144275665283,
+    "blue_traj_H_mean": 0.9629541635513306,
+    "red_traj_H_mean": 0.44775810837745667
+  }
+}

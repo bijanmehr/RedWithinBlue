@@ -77,14 +77,14 @@ class TestCollectEpisode:
         assert len(result["dones"]) == n
 
     def test_observation_shape(self):
-        """Every observation must be a 1-D array of length 255."""
+        """Every observation must be a 1-D array of length env.obs_dim."""
         env = _make_env()
         key = jax.random.PRNGKey(2)
         result = collect_episode(env, _random_policy, key)
 
         for i, obs in enumerate(result["observations"]):
-            assert obs.shape == (255,), (
-                f"Observation at step {i} has shape {obs.shape}, expected (255,)"
+            assert obs.shape == (env.obs_dim,), (
+                f"Observation at step {i} has shape {obs.shape}, expected ({env.obs_dim},)"
             )
 
     def test_lists_same_length(self):
@@ -176,15 +176,15 @@ class TestCollectEpisodeMulti:
             assert n <= 10, f"Agent {agent}: episode length {n} exceeds max_steps=10"
 
     def test_observation_shape(self):
-        """Every agent's every observation must have shape (255,)."""
+        """Every agent's every observation must have shape (env.obs_dim,)."""
         env = _make_env()
         key = jax.random.PRNGKey(13)
         result = collect_episode_multi(env, _random_policy, key)
 
         for agent, traj in result.items():
             for i, obs in enumerate(traj["observations"]):
-                assert obs.shape == (255,), (
-                    f"Agent {agent} step {i}: obs shape {obs.shape}, expected (255,)"
+                assert obs.shape == (env.obs_dim,), (
+                    f"Agent {agent} step {i}: obs shape {obs.shape}, expected ({env.obs_dim},)"
                 )
 
     def test_all_agents_same_episode_length(self):
@@ -260,6 +260,31 @@ class TestConnectivityMask:
         mask = _connectivity_mask(positions, comm_ranges, 0, terrain)
         assert mask.shape == (5,)
         assert mask.dtype == bool
+
+    def test_fallback_when_no_action_connects_only_stay_allowed(self):
+        """When team is already disconnected and no action of agent 0 can fix
+        it, the fallback must allow ONLY STAY (action 0), not all 5 actions.
+
+        The all-True fallback that previously existed was the source of
+        cascading fragmentation during eval/GIF: once one agent slipped
+        through the fallback, every subsequent agent's mask went all-zero
+        too and the whole team broke apart. STAY-only matches the JIT
+        training-path semantics in ``_connectivity_guardrail``.
+        """
+        # Two agents at distance 6, comm_radius=3 -> already disconnected.
+        # No move of agent 0 can bring it within 3 of agent 1 in one step.
+        positions = np.array([[1, 1], [1, 7]])
+        comm_ranges = np.array([3.0, 3.0])
+        terrain = np.zeros((8, 8), dtype=int)
+        terrain[0, :] = 1; terrain[-1, :] = 1
+        terrain[:, 0] = 1; terrain[:, -1] = 1
+
+        mask = _connectivity_mask(positions, comm_ranges, 0, terrain)
+        assert mask[0], "STAY must be allowed in the fallback"
+        assert not mask[1:].any(), (
+            "Only STAY should be allowed when no action preserves connectivity. "
+            "The previous all-True fallback caused cascading fragmentation."
+        )
 
 
 class TestConnectivityGuardrailIntegration:

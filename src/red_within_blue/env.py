@@ -26,6 +26,8 @@ from red_within_blue.types import (
     GraphTracker,
     CELL_EMPTY,
     MAP_UNKNOWN,
+    resolve_view_radius,
+    resolve_survey_radius,
 )
 from red_within_blue import grid as grid_mod
 from red_within_blue import movement as movement_mod
@@ -54,15 +56,30 @@ class GridCommEnv(MultiAgentEnv):
         self.reward_fn = reward_fn
 
         # Derived constants
-        self.obs_d = 2 * config.obs_radius + 1
+        self.view_radius = resolve_view_radius(config)
+        self.survey_radius = resolve_survey_radius(config)
+        if self.survey_radius > self.view_radius:
+            raise ValueError(
+                f"survey_radius ({self.survey_radius}) must be <= view_radius "
+                f"({self.view_radius}); agents cannot commit cells they do "
+                f"not observe."
+            )
+        self.local_obs = bool(config.local_obs)
+        self.obs_d = 2 * self.view_radius + 1
         self.scan_dim = self.obs_d ** 2
-        self.total_msg_dim = self.scan_dim + config.msg_dim
 
         # Agent names (JaxMARL convention)
         self.agents = [f"agent_{i}" for i in range(config.num_agents)]
 
-        # Observation dim: local_scan (flat) + local_map_fraction + messages_in + pos(2) + uid + team_id
-        self.obs_dim = self.scan_dim + 1 + self.total_msg_dim + 2 + 1 + 1
+        # Observation dim: local_scan (flat) + seen (local window or global H·W)
+        # + map_fraction + pos(2) + uid + team_id.
+        # Inter-agent information sharing happens entirely at the local_map level
+        # (see agents.update_local_maps_with_comm) — there are no learned messages
+        # and no message bytes in the observation vector.
+        self.grid_dim = config.grid_height * config.grid_width
+        seen_dim = self.scan_dim if self.local_obs else self.grid_dim
+        self.seen_dim = seen_dim
+        self.obs_dim = self.scan_dim + seen_dim + 1 + 2 + 1 + 1
 
         # Spaces
         for agent in self.agents:
@@ -96,33 +113,36 @@ class GridCommEnv(MultiAgentEnv):
         explored = grid_mod.update_exploration(grid_state.explored, agent_state.positions)
         grid_state = grid_state.replace(explored=explored)
 
-        # 5. Initial local scans
+        # 5. Initial local scans (sensor frames, view_radius-sized).
         local_scan = jax.vmap(
-            lambda pos: grid_mod.get_local_scan(grid_state.terrain, grid_state.occupancy, pos, cfg.obs_radius)
+            lambda pos: grid_mod.get_local_scan(grid_state.terrain, grid_state.occupancy, pos, self.view_radius)
         )(agent_state.positions)
         agent_state = agent_state.replace(local_scan=local_scan)
 
-        # 6. Update local maps with initial scan
-        local_map = agents_mod.update_local_maps(
-            agent_state.local_map, local_scan, agent_state.positions, cfg.obs_radius
-        )
-        agent_state = agent_state.replace(local_map=local_map)
-
-        # 7. Prepare initial messages (scan only, no learned vectors)
-        messages_out = agents_mod.prepare_messages(local_scan, cfg.msg_dim)
-        agent_state = agent_state.replace(messages_out=messages_out)
-
-        # 8. Build communication graph
+        # 6. Build communication graph (needed for map merging)
         adjacency = comm_graph_mod.build_adjacency(agent_state.positions, agent_state.comm_ranges)
         degree = comm_graph_mod.compute_degree(adjacency)
         num_components, is_connected = comm_graph_mod.compute_components(adjacency)
         isolated = comm_graph_mod.compute_isolated(degree)
 
-        # 9. Route initial messages
-        messages_in = comm_graph_mod.route_messages(adjacency, agent_state.messages_out)
-        agent_state = agent_state.replace(messages_in=messages_in)
+        # 7. Update local maps — each agent writes its own survey patch AND
+        #    receives the survey patches of its comm-graph neighbours. With
+        #    team_ids passed through, red → blue messages are replaced with
+        #    MAP_UNKNOWN so the red *fogs* any comm-connected blue's belief.
+        local_map = agents_mod.update_local_maps_with_comm(
+            agent_state.local_map, local_scan, agent_state.positions,
+            adjacency, self.view_radius, self.survey_radius,
+            team_ids=agent_state.team_ids,
+        )
+        # 7b. Ground-truth explored counter: reds zero their spawn cell
+        #     (no-op when num_red_agents == 0).
+        explored = grid_mod.apply_red_contamination(
+            grid_state.explored, agent_state.positions, cfg.num_red_agents,
+        )
+        grid_state = grid_state.replace(explored=explored)
+        agent_state = agent_state.replace(local_map=local_map)
 
-        # 10. Initialize GraphTracker and record step 0
+        # 8. Initialize GraphTracker and record step 0
         tracker = comm_graph_mod.init_tracker(cfg.max_steps, cfg.num_agents, cfg.node_feature_dim)
         node_features = self._build_node_features(agent_state, degree)
         tracker = comm_graph_mod.update_tracker(
@@ -163,13 +183,6 @@ class GridCommEnv(MultiAgentEnv):
         # Convert actions dict to array [N]
         action_array = jnp.stack([actions[a] for a in self.agents])
 
-        # Extract optional learned message vectors
-        has_msg = f"{self.agents[0]}_msg" in actions
-        if has_msg:
-            learned_vectors = jnp.stack([actions[f"{a}_msg"] for a in self.agents])
-        else:
-            learned_vectors = None
-
         # 1. Movement resolution
         new_positions, collision_mask = movement_mod.resolve_actions(
             agent_state.positions, action_array, grid_state.terrain,
@@ -183,41 +196,74 @@ class GridCommEnv(MultiAgentEnv):
         explored = grid_mod.update_exploration(grid_state.explored, new_positions)
         grid_state = grid_state.replace(occupancy=occupancy, explored=explored)
 
-        # 3. Local scans
+        # 3. Local scans (sensor frames, view_radius-sized).
         local_scan = jax.vmap(
-            lambda pos: grid_mod.get_local_scan(grid_state.terrain, grid_state.occupancy, pos, cfg.obs_radius)
+            lambda pos: grid_mod.get_local_scan(grid_state.terrain, grid_state.occupancy, pos, self.view_radius)
         )(new_positions)
         agent_state = agent_state.replace(local_scan=local_scan)
 
-        # 4. Update local maps
-        local_map = agents_mod.update_local_maps(
-            agent_state.local_map, local_scan, new_positions, cfg.obs_radius
-        )
-        agent_state = agent_state.replace(local_map=local_map)
-
-        # 5. Prepare messages
-        messages_out = agents_mod.prepare_messages(local_scan, cfg.msg_dim, learned_vectors)
-        agent_state = agent_state.replace(messages_out=messages_out)
-
-        # 6. Communication graph
+        # 4. Communication graph (built from post-move positions)
         adjacency = comm_graph_mod.build_adjacency(new_positions, agent_state.comm_ranges)
         degree = comm_graph_mod.compute_degree(adjacency)
         num_components, is_connected = comm_graph_mod.compute_components(adjacency)
         isolated = comm_graph_mod.compute_isolated(degree)
 
-        # 7. Route messages
-        messages_in = comm_graph_mod.route_messages(adjacency, agent_state.messages_out)
-        agent_state = agent_state.replace(messages_in=messages_in)
+        # 4b. Per-agent disconnection state (always computed, used by the
+        #     grace mechanism below *and* surfaced in info for diagnostics).
+        in_largest_cc = comm_graph_mod.compute_largest_cc_mask(adjacency)   # [N] bool
+        disconnect_flags = ~in_largest_cc                                    # [N] bool
+        # Timer ticks when disconnected, resets when reconnected.
+        new_disconnect_timer = jnp.where(
+            disconnect_flags,
+            agent_state.disconnect_timer + jnp.int32(1),
+            jnp.int32(0),
+        )
+        main_component_size = jnp.sum(in_largest_cc).astype(jnp.int32)
 
-        # 8. Update GraphTracker
+        # 5. Merge own + neighbor survey patches into each agent's local_map.
+        #    Red senders' messages to *blue* receivers carry MAP_UNKNOWN
+        #    instead of terrain truth — the red fogs the blue's belief.
+        #    Red→red and blue→* stay truthful.
+        local_map = agents_mod.update_local_maps_with_comm(
+            agent_state.local_map, local_scan, new_positions,
+            adjacency, self.view_radius, self.survey_radius,
+            team_ids=agent_state.team_ids,
+        )
+        # 5b. Ground-truth explored counter: reds zero their destination
+        #     (no-op when num_red_agents == 0).
+        explored = grid_mod.apply_red_contamination(
+            grid_state.explored, new_positions, cfg.num_red_agents,
+        )
+        grid_state = grid_state.replace(explored=explored)
+        agent_state = agent_state.replace(
+            local_map=local_map, disconnect_timer=new_disconnect_timer,
+        )
+
+        # 6. Update GraphTracker
         node_features = self._build_node_features(agent_state, degree)
         tracker = comm_graph_mod.update_tracker(
             global_state.graph, adjacency, degree, num_components, is_connected, isolated, node_features,
         )
 
+        # 7. Disconnect-grace failure trigger.
+        #    - disconnect_grace == 0: legacy behaviour, no trigger.
+        #    - mode 0 (per_agent): any agent's timer hitting grace trips failure.
+        #    - mode 1 (team): trip only when the WHOLE graph is disconnected
+        #      and has been so for >= grace steps.
+        grace = jnp.int32(cfg.disconnect_grace)
+        grace_enabled = grace > 0
+        per_agent_trip = jnp.any(new_disconnect_timer >= grace)
+        # For team mode we need a team-level counter. Approximate it cheaply
+        # as: "max timer across agents, but only while the team is split".
+        # When the graph is connected, all timers reset to 0, so the max is 0.
+        team_trip = (~is_connected) & (jnp.max(new_disconnect_timer) >= grace)
+        disconnect_triggered = grace_enabled & jnp.where(
+            jnp.int32(cfg.disconnect_mode) == 0, per_agent_trip, team_trip,
+        )
+
         # 9. Update step counter and check termination
         new_step = global_state.step + 1
-        done = new_step >= cfg.max_steps
+        done = (new_step >= cfg.max_steps) | disconnect_triggered
 
         # 10. Compose new state
         new_global = global_state.replace(
@@ -239,6 +285,10 @@ class GridCommEnv(MultiAgentEnv):
             "is_connected": is_connected,
             "collisions": collision_mask,
             "step": new_step,
+            "disconnect_timer": new_disconnect_timer,
+            "disconnect_flags": disconnect_flags,
+            "disconnect_triggered": disconnect_triggered,
+            "main_component_size": main_component_size,
         }
 
         # 12. Compute rewards
@@ -246,6 +296,16 @@ class GridCommEnv(MultiAgentEnv):
             rewards = self.reward_fn(new_state, prev_state, info)
         else:
             rewards = {a: jnp.float32(0.0) for a in self.agents}
+
+        # 12b. Apply disconnect-fail penalty on the trigger step. Applied to
+        #      all agents uniformly (the team failed together). This does not
+        #      wipe rewards earned before the trigger — coverage still counts.
+        fail_penalty = jnp.where(
+            disconnect_triggered,
+            jnp.float32(cfg.disconnect_fail_penalty),
+            jnp.float32(0.0),
+        )
+        rewards = {a: rewards[a] + fail_penalty for a in self.agents}
 
         # 13. Dones
         dones = {a: done for a in self.agents}
@@ -261,33 +321,8 @@ class GridCommEnv(MultiAgentEnv):
     # ------------------------------------------------------------------
 
     def get_obs(self, state: EnvState) -> Dict[str, chex.Array]:
-        cfg = self.config
-        agent_state = state.agent_state
-        N = cfg.num_agents
-        H, W = cfg.grid_height, cfg.grid_width
-
-        # 1. Flattened local scan [N, scan_dim]
-        flat_scan = agent_state.local_scan.reshape(N, -1).astype(jnp.float32)
-
-        # 2. Local map fraction: how much of the map is known [N, 1]
-        known = (agent_state.local_map != MAP_UNKNOWN).astype(jnp.float32)
-        map_fraction = known.sum(axis=(1, 2)) / (H * W)  # [N]
-        map_fraction = map_fraction[:, None]  # [N, 1]
-
-        # 3. Messages in [N, total_msg_dim]
-        msg_in = agent_state.messages_in
-
-        # 4. Normalized position [N, 2]
-        norm_pos = agent_state.positions.astype(jnp.float32) / jnp.array([H, W], dtype=jnp.float32)
-
-        # 5. UID and team_id [N, 1] each
-        uid = agent_state.uids[:, None].astype(jnp.float32)
-        team = agent_state.team_ids[:, None].astype(jnp.float32)
-
-        # Concatenate: [N, obs_dim]
-        obs_array = jnp.concatenate([flat_scan, map_fraction, msg_in, norm_pos, uid, team], axis=-1)
-
-        return {self.agents[i]: obs_array[i] for i in range(N)}
+        obs_array = self._build_obs_array(state)
+        return {self.agents[i]: obs_array[i] for i in range(self.config.num_agents)}
 
     # ------------------------------------------------------------------
     # obs_array — flat [N, obs_dim] observations for use in jax.lax.scan
@@ -296,21 +331,54 @@ class GridCommEnv(MultiAgentEnv):
     @partial(jax.jit, static_argnums=(0,))
     def obs_array(self, state: EnvState) -> chex.Array:
         """Return observations as a single [N, obs_dim] array (no dict wrapping)."""
+        return self._build_obs_array(state)
+
+    # Shared observation builder used by both get_obs and obs_array.
+    def _build_obs_array(self, state: EnvState) -> chex.Array:
         cfg = self.config
         agent_state = state.agent_state
         N = cfg.num_agents
         H, W = cfg.grid_height, cfg.grid_width
 
+        # 1. Flattened local scan [N, scan_dim] — raw sensor frame this step.
         flat_scan = agent_state.local_scan.reshape(N, -1).astype(jnp.float32)
+
+        # 2. Seen field. Two modes:
+        #    - local_obs=False (default): full H·W known/unknown mask of the
+        #      agent's own local_map. Large, grid-size-dependent.
+        #    - local_obs=True: a (2·view_radius+1)² window of the same mask,
+        #      centered on the agent's position. Constant-size; agents only
+        #      "remember" what they can currently see. Out-of-bounds cells
+        #      are reported as known (walls). Forces the policy to move
+        #      deliberately because it has no global memory to lean on.
         known = (agent_state.local_map != MAP_UNKNOWN).astype(jnp.float32)
-        map_fraction = known.sum(axis=(1, 2)) / (H * W)
-        map_fraction = map_fraction[:, None]
-        msg_in = agent_state.messages_in
+        if self.local_obs:
+            view_r = self.view_radius
+            obs_d = self.obs_d
+
+            def _window(lmap_known: chex.Array, pos: chex.Array) -> chex.Array:
+                padded = jnp.pad(lmap_known, pad_width=view_r, mode="constant", constant_values=1.0)
+                return jax.lax.dynamic_slice(padded, (pos[0], pos[1]), (obs_d, obs_d))
+
+            seen_windows = jax.vmap(_window)(known, agent_state.positions)  # [N, d, d]
+            seen_field = seen_windows.reshape(N, -1)
+        else:
+            seen_field = known.reshape(N, -1)
+
+        # 3. Fraction of the grid currently known [N, 1] — always over the
+        #    full map, regardless of local_obs (cheap, diagnostic).
+        map_fraction = (known.sum(axis=(1, 2)) / (H * W))[:, None]
+
+        # 4. Normalized position, UID, team_id.
         norm_pos = agent_state.positions.astype(jnp.float32) / jnp.array([H, W], dtype=jnp.float32)
         uid = agent_state.uids[:, None].astype(jnp.float32)
+        if cfg.normalize_uid:
+            uid = uid / jnp.float32(cfg.num_agents)
         team = agent_state.team_ids[:, None].astype(jnp.float32)
 
-        return jnp.concatenate([flat_scan, map_fraction, msg_in, norm_pos, uid, team], axis=-1)
+        return jnp.concatenate(
+            [flat_scan, seen_field, map_fraction, norm_pos, uid, team], axis=-1,
+        )
 
     # ------------------------------------------------------------------
     # step_array — array-based step for use in jax.lax.scan

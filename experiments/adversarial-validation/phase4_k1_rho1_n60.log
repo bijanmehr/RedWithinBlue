@@ -1,0 +1,7 @@
+Misbehavior-budget sweep: k∈[1]  ρ∈[1.0]  seeds=60  max_steps=200  adversary_type=trained_red  nominal_mode=clamp_team_id_zero
+
+=== k=1: configs/compromise-16x16-5-4b1r.yaml ===
+  k=1  ρ=1.00  M=1.00  cov=89.55 ± 3.80%   (min=75.5, max=96.9)   t=28.2s
+
+Total sweep time 28.6s  (60 episodes)
+Saved experiments/adversarial-validation/phase4_k1_rho1_n60.npz

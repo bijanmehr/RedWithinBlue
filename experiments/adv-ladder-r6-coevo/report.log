@@ -1,0 +1,13 @@
+[gif] STAY breakdown over 300 steps:
+  agent_0: stay_intended=11 (4%)  stay_forced=240 (80%)  moved=49 (16%)
+  agent_1: stay_intended=9 (3%)  stay_forced=95 (32%)  moved=196 (65%)
+  agent_2: stay_intended=4 (1%)  stay_forced=262 (87%)  moved=34 (11%)
+  agent_3: stay_intended=13 (4%)  stay_forced=124 (41%)  moved=163 (54%)
+  agent_4: stay_intended=2 (1%)  stay_forced=79 (26%)  moved=219 (73%)
+  agent_5: stay_intended=14 (5%)  stay_forced=66 (22%)  moved=220 (73%)
+  agent_6: stay_intended=24 (8%)  stay_forced=40 (13%)  moved=236 (79%)
+  agent_7: stay_intended=0 (0%)  stay_forced=286 (95%)  moved=14 (5%)
+  agent_8: stay_intended=13 (4%)  stay_forced=245 (82%)  moved=42 (14%)
+  agent_9: stay_intended=12 (4%)  stay_forced=5 (2%)  moved=283 (94%)
+[gif] blue ever-known: 25.5%
+Wrote: experiments/adv-ladder-r6-coevo/report.html

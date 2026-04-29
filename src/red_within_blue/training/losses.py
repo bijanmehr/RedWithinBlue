@@ -1,9 +1,11 @@
 """Policy gradient loss functions for RedWithinBlue.
 
-Three progressive layers:
+Four progressive layers:
   Layer 1 — plain REINFORCE (pg_loss)
   Layer 2 — REINFORCE with mean-return baseline (pg_loss_with_baseline)
   Layer 3 — actor-critic with TD(0) advantages (actor_critic_loss)
+  Layer 4 — CTDE actor-critic: shared per-agent policy + central critic on
+             the joint observation (actor_critic_loss_ctde)
 
 All functions are pure JAX; no side effects, no in-place mutation.
 """
@@ -130,29 +132,21 @@ def actor_critic_loss(
     rewards: Array,       # [T] float
     dones: Array,         # [T] bool
     gamma: float,
-) -> Tuple[Array, Array]:
+) -> Tuple[Array, Array, Array]:
     """Actor-critic loss using one-step TD(0) advantages.
 
     advantage_t = r_t + gamma * V(s_{t+1}) * (1 - done_t) - V(s_t)
 
     policy_loss = -mean( log pi(a_t | s_t) * stop_gradient(advantage_t) )
     value_loss  = mean( (V(s_t) - stop_gradient(td_target_t))^2 )
+    entropy     = mean( -sum_a pi(a|s) log pi(a|s) )
 
     V(s_{T+1}) is approximated as 0 (no bootstrap past end of trajectory).
 
-    Args:
-        actor:          Flax Actor module.
-        critic:         Flax Critic module.
-        actor_params:   Parameters for actor.
-        critic_params:  Parameters for critic.
-        observations:   shape [T, obs_dim].
-        actions:        shape [T] int.
-        rewards:        shape [T] float.
-        dones:          shape [T] bool.
-        gamma:          Discount factor.
-
     Returns:
-        (policy_loss, value_loss): both scalars.
+        (policy_loss, value_loss, entropy): three scalars. The trainer is
+        responsible for combining them: ``policy_loss + vf_coef * value_loss
+        - ent_coef * entropy``.
     """
     T = observations.shape[0]
 
@@ -179,4 +173,91 @@ def actor_critic_loss(
     # --- Value loss ---
     value_loss = jnp.mean((values - jax.lax.stop_gradient(td_targets)) ** 2)
 
-    return policy_loss, value_loss
+    # --- Entropy (per-step, averaged) ---
+    probs = jnp.exp(log_probs_all)                                       # [T, A]
+    entropy = -jnp.mean(jnp.sum(probs * log_probs_all, axis=-1))         # scalar
+
+    return policy_loss, value_loss, entropy
+
+
+# ---------------------------------------------------------------------------
+# 5. CTDE actor-critic loss (shared policy + central critic)
+# ---------------------------------------------------------------------------
+
+def actor_critic_loss_ctde(
+    actor: nn.Module,
+    critic: nn.Module,
+    actor_params,
+    critic_params,
+    observations: Array,  # [T, N, obs_dim]
+    actions: Array,       # [T, N] int
+    rewards: Array,       # [T, N] float
+    dones: Array,         # [T] bool
+    gamma: float,
+) -> Tuple[Array, Array, Array]:
+    """Centralized-critic actor-critic loss for N cooperating agents.
+
+    Centralized training, decentralized execution (CTDE):
+    - One shared ``actor`` consumed by each agent on its own local obs
+      (decentralized policy).
+    - One central ``critic`` consumed on the concatenated joint obs
+      [N * obs_dim] -> scalar V(s).
+    - Team reward = sum over agents; team advantage is shared across all
+      agents' policy gradients.
+
+    Compared to ``actor_critic_loss`` vmapped across agents, this replaces N
+    per-agent value functions with one team value function. That is the
+    "C" in CTDE and the reason the policies stop fighting over a shared
+    cooperative reward: all agents update against the same advantage.
+
+    Returns:
+        (policy_loss, value_loss, entropy) — three scalars.
+    """
+    T, N, _ = observations.shape
+
+    # --- Central value: critic on joint obs [T, N*obs_dim] -> [T] ---
+    joint_obs = observations.reshape(T, -1)
+    values = jax.vmap(lambda o: critic.apply(critic_params, o))(joint_obs)
+
+    # --- Critic target: Monte-Carlo team returns (no bootstrap) ---
+    # TD(0) was self-referential: td_target = r + gamma * V(s'), which let the
+    # critic chase its own noisy predictions. With a 100-dim non-stationary
+    # global_seen_mask in each obs, that feedback loop diverged at 15000 eps
+    # even with grad_clip and advantage normalization. MC returns are pure
+    # trajectory regression targets — stable because they don't depend on V.
+    team_rewards = jnp.sum(rewards, axis=-1)                               # [T]
+    mc_returns = compute_discounted_returns(team_rewards, dones, gamma)    # [T]
+    mc_sg = jax.lax.stop_gradient(mc_returns)
+    advantages = mc_sg - values
+
+    # --- Per-agent logits: shape [T, N, A] ---
+    # Double vmap: first over T, then over N. in_axes=(None, 0/1) binds params.
+    batch_actor = jax.vmap(
+        jax.vmap(actor.apply, in_axes=(None, 0)),
+        in_axes=(None, 1), out_axes=1,
+    )
+    logits = batch_actor(actor_params, observations)  # [T, N, A]
+    log_probs_all = jax.nn.log_softmax(logits, axis=-1)
+
+    # Gather log pi(a_t^i | o_t^i) via take_along_axis on the action dim.
+    log_probs = jnp.take_along_axis(
+        log_probs_all, actions[..., None], axis=-1,
+    ).squeeze(-1)  # [T, N]
+
+    # --- Policy loss: shared team advantage broadcast across agents ---
+    # Advantage normalization is intentionally NOT applied here. Unit-variance
+    # renormalization amplifies a still-noisy critic's predictions into
+    # unit-magnitude policy-gradient pushes, which is destructive during the
+    # first few thousand episodes when MC regression hasn't converged yet.
+    # Raw advantages preserve the "small when critic is uncertain" property.
+    adv_sg = jax.lax.stop_gradient(advantages)  # [T]
+    policy_loss = -jnp.mean(log_probs * adv_sg[:, None])
+
+    # --- Value loss: single central critic MSE against MC returns ---
+    value_loss = jnp.mean((values - mc_sg) ** 2)
+
+    # --- Entropy: averaged across both time and agents ---
+    probs = jnp.exp(log_probs_all)
+    entropy = -jnp.mean(jnp.sum(probs * log_probs_all, axis=-1))
+
+    return policy_loss, value_loss, entropy

@@ -12,7 +12,6 @@ from red_within_blue.comm_graph import (
     get_agent_isolation_duration,
     get_fragmentation_count,
     init_tracker,
-    route_messages,
     update_tracker,
 )
 
@@ -119,47 +118,7 @@ def test_compute_isolated():
     assert bool(iso[1]) is False
 
 
-# ── 22. test_route_messages_mean ────────────────────────────────────────────
-
-def test_route_messages_mean():
-    """Verify mean aggregation with known message vectors."""
-    # 3 agents all connected (range large enough)
-    pos = _positions((0.0, 0.0), (1.0, 0.0), (2.0, 0.0))
-    rng = _ranges(10.0, 10.0, 10.0)
-    adj = build_adjacency(pos, rng)
-
-    msgs = jnp.array([
-        [1.0, 0.0],
-        [0.0, 1.0],
-        [1.0, 1.0],
-    ], dtype=_f32)
-
-    routed = route_messages(adj, msgs)
-
-    # Agent 0 receives from agents 1 and 2 -> mean([0,1],[1,1]) = [0.5, 1.0]
-    assert jnp.allclose(routed[0], jnp.array([0.5, 1.0]), atol=1e-5)
-    # Agent 1 receives from agents 0 and 2 -> mean([1,0],[1,1]) = [1.0, 0.5]
-    assert jnp.allclose(routed[1], jnp.array([1.0, 0.5]), atol=1e-5)
-    # Agent 2 receives from agents 0 and 1 -> mean([1,0],[0,1]) = [0.5, 0.5]
-    assert jnp.allclose(routed[2], jnp.array([0.5, 0.5]), atol=1e-5)
-
-
-# ── 23. test_route_messages_isolated ────────────────────────────────────────
-
-def test_route_messages_isolated():
-    """Isolated agent (no incoming) should receive a zero vector."""
-    pos = _positions((0.0, 0.0), (100.0, 0.0))
-    rng = _ranges(5.0, 5.0)
-    adj = build_adjacency(pos, rng)
-
-    msgs = jnp.array([[1.0, 2.0], [3.0, 4.0]], dtype=_f32)
-    routed = route_messages(adj, msgs)
-
-    assert jnp.allclose(routed[0], jnp.zeros(2))
-    assert jnp.allclose(routed[1], jnp.zeros(2))
-
-
-# ── 24. test_tracker_timeline_write ─────────────────────────────────────────
+# ── 22. test_tracker_timeline_write ─────────────────────────────────────────
 
 def test_tracker_timeline_write():
     """GraphTracker records data at the correct step index."""
@@ -260,3 +219,57 @@ def test_tracker_isolation_duration():
     assert int(get_agent_isolation_duration(tracker, 0)) == 2
     # Agent 1: isolated at steps 1, 2 -> duration 2
     assert int(get_agent_isolation_duration(tracker, 1)) == 2
+
+
+# ── Largest-CC labeler ─────────────────────────────────────────────────────────
+
+from red_within_blue.comm_graph import compute_component_labels, compute_largest_cc_mask
+
+
+def test_cc_labels_fully_connected():
+    """All agents in one component -> all share a label."""
+    adj = jnp.array([
+        [False, True,  True],
+        [True,  False, True],
+        [True,  True,  False],
+    ])
+    labels = compute_component_labels(adj)
+    assert len(set(int(x) for x in labels)) == 1
+    mask = compute_largest_cc_mask(adj)
+    assert bool(jnp.all(mask))
+
+
+def test_cc_labels_isolated():
+    """Three disconnected agents -> three distinct labels, largest CC size 1."""
+    adj = jnp.zeros((3, 3), dtype=jnp.bool_)
+    labels = compute_component_labels(adj)
+    assert len(set(int(x) for x in labels)) == 3
+    mask = compute_largest_cc_mask(adj)
+    # All components size 1: argmax hits label 0 (lowest index).
+    assert bool(mask[0]) and not bool(mask[1]) and not bool(mask[2])
+
+
+def test_cc_labels_two_groups():
+    """Agents {0,1,2} in one CC, {3,4} in another. Largest is the triple."""
+    adj = jnp.zeros((5, 5), dtype=jnp.bool_)
+    adj = adj.at[0, 1].set(True).at[1, 0].set(True)
+    adj = adj.at[1, 2].set(True).at[2, 1].set(True)
+    adj = adj.at[3, 4].set(True).at[4, 3].set(True)
+    labels = compute_component_labels(adj)
+    assert int(labels[0]) == int(labels[1]) == int(labels[2])
+    assert int(labels[3]) == int(labels[4])
+    assert int(labels[0]) != int(labels[3])
+    mask = compute_largest_cc_mask(adj)
+    assert bool(mask[0]) and bool(mask[1]) and bool(mask[2])
+    assert not bool(mask[3]) and not bool(mask[4])
+
+
+def test_cc_labels_lone_drifter():
+    """One agent splits off from a connected trio."""
+    adj = jnp.zeros((4, 4), dtype=jnp.bool_)
+    adj = adj.at[0, 1].set(True).at[1, 0].set(True)
+    adj = adj.at[1, 2].set(True).at[2, 1].set(True)
+    # agent 3 isolated
+    mask = compute_largest_cc_mask(adj)
+    assert bool(mask[0]) and bool(mask[1]) and bool(mask[2])
+    assert not bool(mask[3])

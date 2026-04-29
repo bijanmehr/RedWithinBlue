@@ -50,9 +50,11 @@ _PARAM_DESCRIPTIONS: Dict[str, str] = {
     "eval_interval": "How often (in episodes) to log evaluation metrics.",
     "checkpoint_interval": "How often (in episodes) to save model checkpoints.",
     "comm_radius": "Communication range (Euclidean distance). Agents within range form graph edges.",
-    "obs_radius": "Observation radius in cells. Agent sees a (2r+1)x(2r+1) local patch.",
-    "obs_dim": "Total observation vector dimension (derived from obs_radius and msg_dim).",
-    "msg_dim": "Learned message vector size appended to each agent's observation.",
+    "obs_radius": "Legacy single-radius knob; default source for view_radius and survey_radius when they are left at -1.",
+    "view_radius": "Sensor half-size. The policy sees a (2r+1)x(2r+1) window of terrain around the agent.",
+    "survey_radius": "Per-cell mission footprint. Only (2r+1)^2 cells around the agent get committed to the local_map each step; 0 = just the current cell.",
+    "local_obs": "If True, the obs' seen field is a view-sized window instead of the full grid mask. Shrinks obs_dim dramatically.",
+    "obs_dim": "Total observation vector dimension (derived from view_radius, local_obs, and grid size).",
     "disconnect_penalty": "Per-agent per-step penalty when communication graph is disconnected.",
     "actor_hidden_dim": "Hidden layer size in the actor (policy) network.",
     "actor_num_layers": "Number of hidden layers in the actor network.",
@@ -195,6 +197,56 @@ def _loss_curve_chart(metrics: List[Dict[str, Any]]) -> Optional[str]:
             ax.set_title("Loss over training")
             return _fig_to_base64(fig)
     return None
+
+
+def _team_reward_duality_chart(metrics: List[Dict[str, Any]]) -> Optional[str]:
+    """Mirror plot: blue + red total rewards on the same axes per episode.
+
+    Under zero-sum, the two curves are reflections about y = 0; the plot
+    makes the duality visible at a glance and the gap to zero shows the
+    cumulative scale of the conflict.
+    """
+    steps = [m["step"] for m in metrics if "blue_total_reward" in m and "red_total_reward" in m]
+    if not steps:
+        return None
+    blue = [m["blue_total_reward"] for m in metrics if "blue_total_reward" in m]
+    red = [m["red_total_reward"] for m in metrics if "red_total_reward" in m]
+    apply_style()
+    fig, ax = plt.subplots(figsize=(5, 2.5))
+    ax.plot(steps, blue, color=COLORS["blue"], linewidth=1.0, label="Blue team")
+    ax.plot(steps, red, color=COLORS["red"], linewidth=1.0, label="Red team")
+    ax.axhline(0.0, color="#888", linewidth=0.5, linestyle="--")
+    ax.set_xlabel("Episode")
+    ax.set_ylabel("Total team reward")
+    ax.set_title("Zero-sum reward duality")
+    ax.legend(frameon=False, fontsize=7, loc="best")
+    return _fig_to_base64(fig)
+
+
+def _policy_entropy_chart(metrics: List[Dict[str, Any]]) -> Optional[str]:
+    """Per-team policy entropy over episodes — a Nash convergence diagnostic.
+
+    At a mixed-strategy Nash, both entropies are positive and stable. Entropy
+    collapse on either side suggests one team is dominating; oscillation
+    suggests cycling without convergence.
+    """
+    steps = [
+        m["step"] for m in metrics
+        if "blue_policy_entropy" in m and "red_policy_entropy" in m
+    ]
+    if not steps:
+        return None
+    blue_ent = [m["blue_policy_entropy"] for m in metrics if "blue_policy_entropy" in m]
+    red_ent = [m["red_policy_entropy"] for m in metrics if "red_policy_entropy" in m]
+    apply_style()
+    fig, ax = plt.subplots(figsize=(5, 2.5))
+    ax.plot(steps, blue_ent, color=COLORS["blue"], linewidth=1.0, label="Blue")
+    ax.plot(steps, red_ent, color=COLORS["red"], linewidth=1.0, label="Red")
+    ax.set_xlabel("Episode")
+    ax.set_ylabel("Policy entropy (nats)")
+    ax.set_title("Policy entropy over training")
+    ax.legend(frameon=False, fontsize=7, loc="best")
+    return _fig_to_base64(fig)
 
 
 # ---------------------------------------------------------------------------
@@ -647,6 +699,28 @@ def generate_report(
                 row_items.append(f'<img src="data:image/png;base64,{cov_chart}">')
             if loss_chart:
                 row_items.append(f'<img src="data:image/png;base64,{loss_chart}">')
+            parts.append(f'<div class="chart-row">{"".join(row_items)}</div>')
+
+        # --- Nash & duality diagnostics (joint-red trainer) ---
+        duality_chart = _team_reward_duality_chart(metrics)
+        entropy_chart = _policy_entropy_chart(metrics)
+        if duality_chart or entropy_chart:
+            parts.append(
+                '<h2>Nash &amp; Duality</h2>\n'
+                '<p class="section-desc">'
+                'Two diagnostics for the adversarial training loop. The reward '
+                'mirror plot shows the zero-sum coupling between blue and red '
+                'team totals; under exact zero-sum the two curves are reflections '
+                'about y = 0. Per-team policy entropy tracks whether either side '
+                'has converged to a near-deterministic best-response (entropy '
+                'collapse) or both remain mixed (typical of a Nash equilibrium).'
+                '</p>'
+            )
+            row_items = []
+            if duality_chart:
+                row_items.append(f'<img src="data:image/png;base64,{duality_chart}">')
+            if entropy_chart:
+                row_items.append(f'<img src="data:image/png;base64,{entropy_chart}">')
             parts.append(f'<div class="chart-row">{"".join(row_items)}</div>')
 
     # --- Visitation heatmap ---

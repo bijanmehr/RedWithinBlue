@@ -11,5 +11,17 @@ build/
 .claude/
 .superpowers/
 .pytest_cache/
-experiments/
+# experiments: track data, exclude reports / checkpoints / backups
+experiments/Backup/
+experiments/**/*.html
+experiments/**/*.gif
+experiments/**/*.png
+experiments/**/*.pdf
+experiments/**/*.jpg
+experiments/**/*.jpeg
+experiments/**/*.svg
+experiments/**/*.mp4
+experiments/**/checkpoint*.npz
+
 *.log
+!experiments/**/*.log

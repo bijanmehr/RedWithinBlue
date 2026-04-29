@@ -13,7 +13,7 @@ from red_within_blue.training.losses import (
 from red_within_blue.training.networks import Actor, Critic
 
 RNG = jax.random.PRNGKey(42)
-OBS_DIM = 255
+OBS_DIM = 376
 NUM_ACTIONS = 5
 T = 10  # trajectory length used in most tests
 
@@ -161,22 +161,24 @@ class TestActorCriticLoss:
         actor, critic, actor_params, critic_params = model_and_params
         observations, actions, rewards, dones, _, _ = _make_trajectory()
 
-        policy_loss, value_loss = actor_critic_loss(
+        policy_loss, value_loss, entropy = actor_critic_loss(
             actor, critic, actor_params, critic_params,
             observations, actions, rewards, dones, gamma=0.99,
         )
 
         assert policy_loss.shape == (), f"policy_loss should be scalar, got {policy_loss.shape}"
         assert value_loss.shape  == (), f"value_loss should be scalar, got {value_loss.shape}"
+        assert entropy.shape == (), f"entropy should be scalar, got {entropy.shape}"
         assert jnp.isfinite(policy_loss), f"policy_loss is not finite: {policy_loss}"
         assert jnp.isfinite(value_loss),  f"value_loss is not finite: {value_loss}"
+        assert entropy >= 0.0, f"entropy should be non-negative, got {entropy}"
 
     def test_value_loss_nonnegative(self, model_and_params):
         """MSE value loss must be >= 0."""
         actor, critic, actor_params, critic_params = model_and_params
         observations, actions, rewards, dones, _, _ = _make_trajectory()
 
-        _, value_loss = actor_critic_loss(
+        _, value_loss, _ = actor_critic_loss(
             actor, critic, actor_params, critic_params,
             observations, actions, rewards, dones, gamma=0.99,
         )
@@ -188,7 +190,7 @@ class TestActorCriticLoss:
         observations, actions, rewards, dones, _, _ = _make_trajectory()
 
         def _policy_loss(ap):
-            pl, _ = actor_critic_loss(
+            pl, _, _ = actor_critic_loss(
                 actor, critic, ap, critic_params,
                 observations, actions, rewards, dones, gamma=0.99,
             )
@@ -205,7 +207,7 @@ class TestActorCriticLoss:
         observations, actions, rewards, dones, _, _ = _make_trajectory()
 
         def _value_loss(cp):
-            _, vl = actor_critic_loss(
+            _, vl, _ = actor_critic_loss(
                 actor, critic, actor_params, cp,
                 observations, actions, rewards, dones, gamma=0.99,
             )

@@ -1,0 +1,17 @@
+Eval: 100 eps/seed x 5 seeds = 500 total per row
+
+                config      mean        p5    median       p95   %<+1.0
+    argmax,  eps=0.000  -2.110  -3.518  -2.160  -0.679  100.0%
+    argmax,  eps=0.005  -1.959  -3.077  -2.083  -0.437  100.0%
+    sample,  eps=0.000  -0.448  -2.310  -0.264  +1.160   92.2%
+    sample,  eps=0.005  -0.463  -2.293  -0.258  +1.143   91.8%
+    sample,  eps=0.050  -0.397  -2.189  -0.188  +1.219   91.0%
+
+Per-seed breakdown (sample from pi, eps=0):
+  seed 0: mean=-0.185  p5=-2.090  median=+0.039  p95=+1.150
+  seed 1: mean=-2.169  p5=-2.669  median=-2.154  p95=-1.833
+  seed 2: mean=-0.018  p5=-1.796  median=+0.048  p95=+1.289
+  seed 3: mean=-0.222  p5=-1.393  median=-0.257  p95=+0.900
+  seed 4: mean=+0.353  p5=-1.183  median=+0.517  p95=+1.322
+
+Best seed (sample,eps=0): seed 4 @ +0.353

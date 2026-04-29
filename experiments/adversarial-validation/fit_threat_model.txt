@@ -1,0 +1,64 @@
+========================================================================
+Phase 7 — Threat-model fit (homogeneous rho, clean nominal, trained_red)
+========================================================================
+  loaded  phase3_trained_clean_k1_n60.npz  (n=60)
+  loaded  phase3_trained_clean_n60.npz  (n=60)
+
+Observed DJ on the two clean sweeps (mean +/- SEM, pp):
+  k=1  rho->   0.00  0.10  0.25  0.50  0.75  1.00
+        DJ   +9.25 +10.03 +9.13 +9.79 +9.57 +8.95
+        SEM   0.43  0.48  0.60  0.61  0.51  0.49
+  k=2  rho->   0.00  0.10  0.25  0.50  0.75  1.00
+        DJ   +14.59 +14.38 +12.97 +10.73 +11.46 +12.21
+        SEM   0.98  0.93  0.81  0.67  0.85  0.84
+
+alpha estimates (per-compromise floor, pp):
+  alpha (from k=1 floor) = +9.25  +/- 0.43
+  alpha (from k=2 floor) = +7.29  +/- 0.49
+  consistency: |a1 - a2| / pooled_SEM = 2.99 (>2 = inconsistent)
+  pooled alpha = +8.27 pp
+
+beta from k=1 slope = -0.35  +/- 0.50
+  M1 (additive)        : beta_M1 = -0.35  (DJ ~ a*k + b*k*rho)
+  M2 (concentration)   : beta_M2 = -0.35  (DJ ~ a*k + b*c(rho))
+
+Grid residuals  (DJ_obs - DJ_pred,  pp;  > 2*SEM in brackets):
+    k   rho   DJ_obs  M1_pred   M1_res  M2_pred   M2_res  2*SEM
+    1  0.00    +9.25    +8.27   +0.98*    +8.27   +0.98*   0.86
+    1  0.10   +10.03    +8.24   +1.79*    +8.24   +1.79*   0.95
+    1  0.25    +9.13    +8.18   +0.95     +8.18   +0.95    1.20
+    1  0.50    +9.79    +8.09   +1.70*    +8.09   +1.70*   1.21
+    1  0.75    +9.57    +8.01   +1.57*    +8.01   +1.57*   1.03
+    1  1.00    +8.95    +7.92   +1.03*    +7.92   +1.03*   0.99
+    2  0.00   +14.59   +16.54   -1.95    +16.54   -1.95    1.96
+    2  0.10   +14.38   +16.47   -2.10*   +16.51   -2.13*   1.86
+    2  0.25   +12.97   +16.37   -3.39*   +16.45   -3.48*   1.63
+    2  0.50   +10.73   +16.19   -5.46*   +16.37   -5.64*   1.34
+    2  0.75   +11.46   +16.01   -4.55*   +16.28   -4.82*   1.71
+    2  1.00   +12.21   +15.83   -3.63*   +16.19   -3.98*   1.68
+  (* marks cells where |residual| > 2 SEM)
+
+Held-out cell (k=2, rho=1):
+  observed       = +12.21  +/- 0.84
+  M1 prediction  = +15.83   residual = -3.63  (z = -4.31)
+  M2 prediction  = +16.19   residual = -3.98  (z = -4.74)
+  Phase 1 anchor (n=60) = +12.21  +/- 0.84  (uses this for falsification when |zM1 - zM2| ambiguous on n=30)
+    M1 z (vs n=60): -4.31
+    M2 z (vs n=60): -4.74
+
+Worst-case envelope (Phase 2, k=2, rho=1):
+                  stay  DJ = +14.79  +/- 1.61
+           nominal_raw  DJ = +14.78  +/- 1.24
+        uniform_random  DJ = +14.55  +/- 1.11
+           trained_red  DJ = +13.55  +/- 1.25
+       nominal_clamped  DJ = +12.70  +/- 1.04
+
+  worst-case beta (M2-form using stay): -1.75
+  envelope: DJ_max(k, rho) = +8.27*k + -1.75*max_i(rho_i)
+
+========================================================================
+Fitted threat-model equations:
+  M1 (additive)      : DJ(k, rho)  =  +8.27 * k  +  -0.35 * k * rho
+  M2 (concentration) : DJ(k, rho)  =  +8.27 * k  +  -0.35 * max_i rho_i
+  Worst-case (M2)    : DJ(k, rho) <=  +8.27 * k  +  -1.75 * max_i rho_i
+========================================================================

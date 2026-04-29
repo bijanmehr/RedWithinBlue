@@ -1,0 +1,228 @@
+
+==========================================================
+ Experiment : survey-local-8-N1
+ Config     : configs/survey-local-8-N1.yaml
+ Method     : actor_critic
+ Env        : 8x8, N=1, steps=80
+ Train      : 4000 eps x 5 seed(s), lr=0.0003, gamma=0.99
+==========================================================
+
+survey-local-8-N1 (5 seeds): 0 / 4000 eps ...
+[  0.0%] ep      1/4000 | loss +0.0241 | reward +1.072 |    0.9s elapsed / 3501.
+[  0.5%] ep     21/4000 | loss -0.0358 | reward +0.988 |    0.9s elapsed /  174.
+[  1.0%] ep     41/4000 | loss -0.0202 | reward +1.156 |    1.0s elapsed /   93.
+[  1.5%] ep     61/4000 | loss -0.0261 | reward +1.409 |    1.0s elapsed /   65.
+[  2.0%] ep     81/4000 | loss -0.0305 | reward +1.662 |    1.1s elapsed /   51.
+[  2.5%] ep    101/4000 | loss -0.0432 | reward +1.241 |    1.1s elapsed /   42.
+[  3.0%] ep    121/4000 | loss -0.0234 | reward +2.337 |    1.1s elapsed /   36.
+[  3.5%] ep    141/4000 | loss -0.0306 | reward +1.831 |    1.2s elapsed /   32.
+[  4.0%] ep    161/4000 | loss -0.0421 | reward +1.494 |    1.2s elapsed /   29.
+[  4.5%] ep    181/4000 | loss -0.0493 | reward +1.072 |    1.3s elapsed /   26.
+[  5.0%] ep    201/4000 | loss -0.0361 | reward +1.747 |    1.3s elapsed /   24.
+[  5.5%] ep    221/4000 | loss -0.0260 | reward +2.337 |    1.4s elapsed /   23.
+[  6.0%] ep    241/4000 | loss -0.0326 | reward +1.831 |    1.4s elapsed /   21.
+[  6.5%] ep    261/4000 | loss -0.0203 | reward +2.674 |    1.5s elapsed /   20.
+[  7.0%] ep    281/4000 | loss -0.0410 | reward +1.578 |    1.5s elapsed /   19.
+[  7.5%] ep    301/4000 | loss -0.0474 | reward +1.662 |    1.5s elapsed /   18.
+[  8.0%] ep    321/4000 | loss -0.0404 | reward +1.831 |    1.6s elapsed /   18.
+[  8.5%] ep    341/4000 | loss -0.0263 | reward +2.421 |    1.6s elapsed /   17.
+[  9.0%] ep    361/4000 | loss -0.0333 | reward +2.168 |    1.7s elapsed /   16.
+[  9.5%] ep    381/4000 | loss -0.0419 | reward +1.831 |    1.7s elapsed /   16.
+[ 10.0%] ep    401/4000 | loss -0.0463 | reward +1.747 |    1.8s elapsed /   15.
+[ 10.5%] ep    421/4000 | loss -0.0451 | reward +1.662 |    1.8s elapsed /   15.
+[ 11.0%] ep    441/4000 | loss -0.0387 | reward +1.915 |    1.9s elapsed /   15.
+[ 11.5%] ep    461/4000 | loss -0.0304 | reward +2.253 |    1.9s elapsed /   14.
+[ 12.0%] ep    481/4000 | loss -0.0304 | reward +2.590 |    1.9s elapsed /   14.
+[ 12.5%] ep    501/4000 | loss -0.0361 | reward +2.337 |    2.0s elapsed /   13.
+[ 13.0%] ep    521/4000 | loss -0.0333 | reward +2.421 |    2.0s elapsed /   13.
+[ 13.5%] ep    541/4000 | loss -0.0471 | reward +1.831 |    2.1s elapsed /   13.
+[ 14.0%] ep    561/4000 | loss -0.0358 | reward +2.168 |    2.1s elapsed /   13.
+[ 14.5%] ep    581/4000 | loss -0.0323 | reward +2.253 |    2.2s elapsed /   12.
+[ 15.0%] ep    601/4000 | loss -0.0508 | reward +1.831 |    2.2s elapsed /   12.
+[ 15.5%] ep    621/4000 | loss -0.0101 | reward +2.927 |    2.3s elapsed /   12.
+[ 16.0%] ep    641/4000 | loss -0.0319 | reward +2.759 |    2.3s elapsed /   12.
+[ 16.5%] ep    661/4000 | loss -0.0302 | reward +2.590 |    2.3s elapsed /   11.
+[ 17.0%] ep    681/4000 | loss -0.0310 | reward +2.506 |    2.4s elapsed /   11.
+[ 17.5%] ep    701/4000 | loss -0.0302 | reward +2.843 |    2.4s elapsed /   11.
+[ 18.0%] ep    721/4000 | loss -0.0343 | reward +2.506 |    2.5s elapsed /   11.
+[ 18.5%] ep    741/4000 | loss -0.0278 | reward +2.674 |    2.5s elapsed /   11.
+[ 19.0%] ep    761/4000 | loss -0.0530 | reward +1.747 |    2.6s elapsed /   10.
+[ 19.5%] ep    781/4000 | loss -0.0332 | reward +2.421 |    2.6s elapsed /   10.
+[ 20.0%] ep    801/4000 | loss -0.0342 | reward +2.759 |    2.7s elapsed /   10.
+[ 20.5%] ep    821/4000 | loss -0.0341 | reward +2.421 |    2.7s elapsed /   10.
+[ 21.0%] ep    841/4000 | loss -0.0493 | reward +2.000 |    2.7s elapsed /   10.
+[ 21.5%] ep    861/4000 | loss -0.0238 | reward +2.674 |    2.8s elapsed /   10.
+[ 22.0%] ep    881/4000 | loss -0.0196 | reward +2.843 |    2.8s elapsed /   10.
+[ 22.5%] ep    901/4000 | loss -0.0222 | reward +2.927 |    2.9s elapsed /    9.
+[ 23.0%] ep    921/4000 | loss -0.0485 | reward +1.747 |    2.9s elapsed /    9.
+[ 23.5%] ep    941/4000 | loss -0.0230 | reward +2.674 |    3.0s elapsed /    9.
+[ 24.0%] ep    961/4000 | loss -0.0372 | reward +2.337 |    3.0s elapsed /    9.
+[ 24.5%] ep    981/4000 | loss -0.0410 | reward +1.915 |    3.1s elapsed /    9.
+[ 25.0%] ep   1001/4000 | loss -0.0353 | reward +2.590 |    3.1s elapsed /    9.
+[ 25.5%] ep   1021/4000 | loss -0.0286 | reward +2.674 |    3.1s elapsed /    9.
+[ 26.0%] ep   1041/4000 | loss -0.0310 | reward +2.674 |    3.2s elapsed /    9.
+[ 26.5%] ep   1061/4000 | loss -0.0223 | reward +2.759 |    3.2s elapsed /    8.
+[ 27.0%] ep   1081/4000 | loss -0.0344 | reward +2.759 |    3.3s elapsed /    8.
+[ 27.5%] ep   1101/4000 | loss -0.0269 | reward +2.674 |    3.3s elapsed /    8.
+[ 28.0%] ep   1121/4000 | loss -0.0292 | reward +2.674 |    3.4s elapsed /    8.
+[ 28.5%] ep   1141/4000 | loss -0.0436 | reward +2.253 |    3.4s elapsed /    8.
+[ 29.0%] ep   1161/4000 | loss -0.0389 | reward +2.506 |    3.5s elapsed /    8.
+[ 29.5%] ep   1181/4000 | loss -0.0345 | reward +2.590 |    3.5s elapsed /    8.
+[ 30.0%] ep   1201/4000 | loss -0.0261 | reward +2.674 |    3.5s elapsed /    8.
+[ 30.5%] ep   1221/4000 | loss -0.0324 | reward +2.506 |    3.6s elapsed /    8.
+[ 31.0%] ep   1241/4000 | loss -0.0295 | reward +2.674 |    3.6s elapsed /    8.
+[ 31.5%] ep   1261/4000 | loss -0.0297 | reward +2.674 |    3.7s elapsed /    8.
+[ 32.0%] ep   1281/4000 | loss -0.0383 | reward +2.253 |    3.7s elapsed /    7.
+[ 32.5%] ep   1301/4000 | loss -0.0222 | reward +2.759 |    3.8s elapsed /    7.
+[ 33.0%] ep   1321/4000 | loss -0.0324 | reward +2.674 |    3.8s elapsed /    7.
+[ 33.5%] ep   1341/4000 | loss -0.0455 | reward +2.000 |    3.8s elapsed /    7.
+[ 34.0%] ep   1361/4000 | loss -0.0301 | reward +2.759 |    3.9s elapsed /    7.
+[ 34.5%] ep   1381/4000 | loss -0.0281 | reward +2.674 |    3.9s elapsed /    7.
+[ 35.0%] ep   1401/4000 | loss -0.0298 | reward +2.674 |    4.0s elapsed /    7.
+[ 35.5%] ep   1421/4000 | loss -0.0263 | reward +2.927 |    4.0s elapsed /    7.
+[ 36.0%] ep   1441/4000 | loss -0.0328 | reward +2.506 |    4.1s elapsed /    7.
+[ 36.5%] ep   1461/4000 | loss -0.0312 | reward +2.590 |    4.1s elapsed /    7.
+[ 37.0%] ep   1481/4000 | loss -0.0343 | reward +2.759 |    4.2s elapsed /    7.
+[ 37.5%] ep   1501/4000 | loss -0.0243 | reward +2.843 |    4.2s elapsed /    7.
+[ 38.0%] ep   1521/4000 | loss -0.0302 | reward +2.590 |    4.2s elapsed /    6.
+[ 38.5%] ep   1541/4000 | loss -0.0292 | reward +2.674 |    4.3s elapsed /    6.
+[ 39.0%] ep   1561/4000 | loss -0.0500 | reward +1.831 |    4.3s elapsed /    6.
+[ 39.5%] ep   1581/4000 | loss -0.0362 | reward +2.421 |    4.4s elapsed /    6.
+[ 40.0%] ep   1601/4000 | loss -0.0189 | reward +2.759 |    4.4s elapsed /    6.
+[ 40.5%] ep   1621/4000 | loss -0.0346 | reward +2.674 |    4.5s elapsed /    6.
+[ 41.0%] ep   1641/4000 | loss -0.0416 | reward +2.000 |    4.5s elapsed /    6.
+[ 41.5%] ep   1661/4000 | loss -0.0308 | reward +2.927 |    4.6s elapsed /    6.
+[ 42.0%] ep   1681/4000 | loss -0.0355 | reward +2.506 |    4.6s elapsed /    6.
+[ 42.5%] ep   1701/4000 | loss -0.0334 | reward +2.506 |    4.6s elapsed /    6.
+[ 43.0%] ep   1721/4000 | loss -0.0325 | reward +2.674 |    4.7s elapsed /    6.
+[ 43.5%] ep   1741/4000 | loss -0.0339 | reward +2.674 |    4.7s elapsed /    6.
+[ 44.0%] ep   1761/4000 | loss -0.0343 | reward +2.590 |    4.8s elapsed /    6.
+[ 44.5%] ep   1781/4000 | loss -0.0352 | reward +2.590 |    4.8s elapsed /    6.
+[ 45.0%] ep   1801/4000 | loss -0.0272 | reward +2.674 |    4.9s elapsed /    5.
+[ 45.5%] ep   1821/4000 | loss -0.0237 | reward +2.927 |    4.9s elapsed /    5.
+[ 46.0%] ep   1841/4000 | loss -0.0314 | reward +2.843 |    4.9s elapsed /    5.
+[ 46.5%] ep   1861/4000 | loss -0.0271 | reward +2.759 |    5.0s elapsed /    5.
+[ 47.0%] ep   1881/4000 | loss -0.0212 | reward +2.843 |    5.0s elapsed /    5.
+[ 47.5%] ep   1901/4000 | loss -0.0334 | reward +2.590 |    5.1s elapsed /    5.
+[ 48.0%] ep   1921/4000 | loss -0.0367 | reward +2.506 |    5.1s elapsed /    5.
+[ 48.5%] ep   1941/4000 | loss -0.0450 | reward +2.337 |    5.2s elapsed /    5.
+[ 49.0%] ep   1961/4000 | loss -0.0374 | reward +2.337 |    5.2s elapsed /    5.
+[ 49.5%] ep   1981/4000 | loss -0.0338 | reward +2.590 |    5.3s elapsed /    5.
+[ 50.0%] ep   2001/4000 | loss -0.0298 | reward +2.674 |    5.3s elapsed /    5.
+[ 50.5%] ep   2021/4000 | loss -0.0327 | reward +2.590 |    5.3s elapsed /    5.
+[ 51.0%] ep   2041/4000 | loss -0.0316 | reward +2.759 |    5.4s elapsed /    5.
+[ 51.5%] ep   2061/4000 | loss -0.0351 | reward +2.590 |    5.4s elapsed /    5.
+[ 52.0%] ep   2081/4000 | loss -0.0379 | reward +2.590 |    5.5s elapsed /    5.
+[ 52.5%] ep   2101/4000 | loss -0.0314 | reward +2.759 |    5.5s elapsed /    5.
+[ 53.0%] ep   2121/4000 | loss -0.0355 | reward +2.674 |    5.6s elapsed /    4.
+[ 53.5%] ep   2141/4000 | loss -0.0280 | reward +2.590 |    5.6s elapsed /    4.
+[ 54.0%] ep   2161/4000 | loss -0.0260 | reward +2.759 |    5.7s elapsed /    4.
+[ 54.5%] ep   2181/4000 | loss -0.0511 | reward +1.747 |    5.7s elapsed /    4.
+[ 55.0%] ep   2201/4000 | loss -0.0300 | reward +2.674 |    5.8s elapsed /    4.
+[ 55.5%] ep   2221/4000 | loss -0.0458 | reward +2.168 |    5.8s elapsed /    4.
+[ 56.0%] ep   2241/4000 | loss -0.0363 | reward +2.759 |    5.8s elapsed /    4.
+[ 56.5%] ep   2261/4000 | loss -0.0349 | reward +2.421 |    5.9s elapsed /    4.
+[ 57.0%] ep   2281/4000 | loss -0.0352 | reward +2.590 |    5.9s elapsed /    4.
+[ 57.5%] ep   2301/4000 | loss -0.0246 | reward +2.843 |    6.0s elapsed /    4.
+[ 58.0%] ep   2321/4000 | loss -0.0271 | reward +2.759 |    6.0s elapsed /    4.
+[ 58.5%] ep   2341/4000 | loss -0.0341 | reward +2.590 |    6.1s elapsed /    4.
+[ 59.0%] ep   2361/4000 | loss -0.0265 | reward +2.843 |    6.1s elapsed /    4.
+[ 59.5%] ep   2381/4000 | loss -0.0375 | reward +2.674 |    6.2s elapsed /    4.
+[ 60.0%] ep   2401/4000 | loss -0.0299 | reward +2.674 |    6.2s elapsed /    4.
+[ 60.5%] ep   2421/4000 | loss -0.0321 | reward +2.590 |    6.2s elapsed /    4.
+[ 61.0%] ep   2441/4000 | loss -0.0360 | reward +2.421 |    6.3s elapsed /    4.
+[ 61.5%] ep   2461/4000 | loss -0.0375 | reward +2.421 |    6.3s elapsed /    4.
+[ 62.0%] ep   2481/4000 | loss -0.0339 | reward +2.421 |    6.4s elapsed /    3.
+[ 62.5%] ep   2501/4000 | loss -0.0349 | reward +2.590 |    6.4s elapsed /    3.
+[ 63.0%] ep   2521/4000 | loss -0.0409 | reward +2.337 |    6.5s elapsed /    3.
+[ 63.5%] ep   2541/4000 | loss -0.0280 | reward +2.590 |    6.5s elapsed /    3.
+[ 64.0%] ep   2561/4000 | loss -0.0239 | reward +2.927 |    6.6s elapsed /    3.
+[ 64.5%] ep   2581/4000 | loss -0.0333 | reward +2.506 |    6.6s elapsed /    3.
+[ 65.0%] ep   2601/4000 | loss -0.0226 | reward +2.421 |    6.6s elapsed /    3.
+[ 65.5%] ep   2621/4000 | loss -0.0310 | reward +2.590 |    6.7s elapsed /    3.
+[ 66.0%] ep   2641/4000 | loss -0.0379 | reward +2.759 |    6.7s elapsed /    3.
+[ 66.5%] ep   2661/4000 | loss -0.0331 | reward +2.590 |    6.8s elapsed /    3.
+[ 67.0%] ep   2681/4000 | loss -0.0408 | reward +2.253 |    6.8s elapsed /    3.
+[ 67.5%] ep   2701/4000 | loss -0.0351 | reward +2.590 |    6.9s elapsed /    3.
+[ 68.0%] ep   2721/4000 | loss -0.0289 | reward +2.843 |    6.9s elapsed /    3.
+[ 68.5%] ep   2741/4000 | loss -0.0468 | reward +1.915 |    6.9s elapsed /    3.
+[ 69.0%] ep   2761/4000 | loss -0.0345 | reward +2.421 |    7.0s elapsed /    3.
+[ 69.5%] ep   2781/4000 | loss -0.0323 | reward +2.590 |    7.0s elapsed /    3.
+[ 70.0%] ep   2801/4000 | loss -0.0348 | reward +2.759 |    7.1s elapsed /    3.
+[ 70.5%] ep   2821/4000 | loss -0.0351 | reward +2.759 |    7.1s elapsed /    3.
+[ 71.0%] ep   2841/4000 | loss -0.0347 | reward +2.253 |    7.2s elapsed /    2.
+[ 71.5%] ep   2861/4000 | loss -0.0411 | reward +2.337 |    7.2s elapsed /    2.
+[ 72.0%] ep   2881/4000 | loss -0.0411 | reward +2.000 |    7.3s elapsed /    2.
+[ 72.5%] ep   2901/4000 | loss -0.0358 | reward +2.506 |    7.3s elapsed /    2.
+[ 73.0%] ep   2921/4000 | loss -0.0366 | reward +2.421 |    7.3s elapsed /    2.
+[ 73.5%] ep   2941/4000 | loss -0.0245 | reward +2.843 |    7.4s elapsed /    2.
+[ 74.0%] ep   2961/4000 | loss -0.0369 | reward +2.337 |    7.4s elapsed /    2.
+[ 74.5%] ep   2981/4000 | loss -0.0278 | reward +2.759 |    7.5s elapsed /    2.
+[ 75.0%] ep   3001/4000 | loss -0.0323 | reward +2.421 |    7.5s elapsed /    2.
+[ 75.5%] ep   3021/4000 | loss -0.0325 | reward +2.421 |    7.6s elapsed /    2.
+[ 76.0%] ep   3041/4000 | loss -0.0397 | reward +2.421 |    7.6s elapsed /    2.
+[ 76.5%] ep   3061/4000 | loss -0.0326 | reward +2.927 |    7.7s elapsed /    2.
+[ 77.0%] ep   3081/4000 | loss -0.0342 | reward +2.506 |    7.7s elapsed /    2.
+[ 77.5%] ep   3101/4000 | loss -0.0315 | reward +2.674 |    7.7s elapsed /    2.
+[ 78.0%] ep   3121/4000 | loss -0.0373 | reward +2.759 |    7.8s elapsed /    2.
+[ 78.5%] ep   3141/4000 | loss -0.0339 | reward +2.421 |    7.8s elapsed /    2.
+[ 79.0%] ep   3161/4000 | loss -0.0389 | reward +2.421 |    7.9s elapsed /    2.
+[ 79.5%] ep   3181/4000 | loss -0.0435 | reward +2.253 |    7.9s elapsed /    2.
+[ 80.0%] ep   3201/4000 | loss -0.0386 | reward +2.590 |    8.0s elapsed /    2.
+[ 80.5%] ep   3221/4000 | loss -0.0416 | reward +2.253 |    8.0s elapsed /    1.
+[ 81.0%] ep   3241/4000 | loss -0.0278 | reward +2.843 |    8.1s elapsed /    1.
+[ 81.5%] ep   3261/4000 | loss -0.0346 | reward +2.674 |    8.1s elapsed /    1.
+[ 82.0%] ep   3281/4000 | loss -0.0418 | reward +2.000 |    8.1s elapsed /    1.
+[ 82.5%] ep   3301/4000 | loss -0.0334 | reward +2.590 |    8.2s elapsed /    1.
+[ 83.0%] ep   3321/4000 | loss -0.0369 | reward +2.590 |    8.2s elapsed /    1.
+[ 83.5%] ep   3341/4000 | loss -0.0361 | reward +2.253 |    8.3s elapsed /    1.
+[ 84.0%] ep   3361/4000 | loss -0.0328 | reward +2.506 |    8.3s elapsed /    1.
+[ 84.5%] ep   3381/4000 | loss -0.0367 | reward +2.421 |    8.4s elapsed /    1.
+[ 85.0%] ep   3401/4000 | loss -0.0365 | reward +2.590 |    8.4s elapsed /    1.
+[ 85.5%] ep   3421/4000 | loss -0.0251 | reward +2.843 |    8.4s elapsed /    1.
+[ 86.0%] ep   3441/4000 | loss -0.0343 | reward +2.590 |    8.5s elapsed /    1.
+[ 86.5%] ep   3461/4000 | loss -0.0325 | reward +2.674 |    8.5s elapsed /    1.
+[ 87.0%] ep   3481/4000 | loss -0.0310 | reward +2.843 |    8.6s elapsed /    1.
+[ 87.5%] ep   3501/4000 | loss -0.0250 | reward +2.759 |    8.6s elapsed /    1.
+[ 88.0%] ep   3521/4000 | loss -0.0317 | reward +2.590 |    8.7s elapsed /    1.
+[ 88.5%] ep   3541/4000 | loss -0.0280 | reward +2.759 |    8.7s elapsed /    1.
+[ 89.0%] ep   3561/4000 | loss -0.0317 | reward +2.674 |    8.8s elapsed /    1.
+[ 89.5%] ep   3581/4000 | loss -0.0475 | reward +1.831 |    8.8s elapsed /    1.
+[ 90.0%] ep   3601/4000 | loss -0.0556 | reward +1.578 |    8.8s elapsed /    1.
+[ 90.5%] ep   3621/4000 | loss -0.0327 | reward +2.337 |    8.9s elapsed /    0.
+[ 91.0%] ep   3641/4000 | loss -0.0325 | reward +2.759 |    8.9s elapsed /    0.
+[ 91.5%] ep   3661/4000 | loss -0.0304 | reward +2.759 |    9.0s elapsed /    0.
+[ 92.0%] ep   3681/4000 | loss -0.0351 | reward +2.421 |    9.0s elapsed /    0.
+[ 92.5%] ep   3701/4000 | loss -0.0405 | reward +2.421 |    9.1s elapsed /    0.
+[ 93.0%] ep   3721/4000 | loss -0.0344 | reward +2.674 |    9.1s elapsed /    0.
+[ 93.5%] ep   3741/4000 | loss -0.0399 | reward +2.337 |    9.2s elapsed /    0.
+[ 94.0%] ep   3761/4000 | loss -0.0238 | reward +2.843 |    9.2s elapsed /    0.
+[ 94.5%] ep   3781/4000 | loss -0.0432 | reward +2.000 |    9.2s elapsed /    0.
+[ 95.0%] ep   3801/4000 | loss -0.0396 | reward +2.674 |    9.3s elapsed /    0.
+[ 95.5%] ep   3821/4000 | loss -0.0300 | reward +2.590 |    9.3s elapsed /    0.
+[ 96.0%] ep   3841/4000 | loss -0.0336 | reward +2.421 |    9.4s elapsed /    0.
+[ 96.5%] ep   3861/4000 | loss -0.0330 | reward +2.421 |    9.4s elapsed /    0.
+[ 97.0%] ep   3881/4000 | loss -0.0279 | reward +2.674 |    9.5s elapsed /    0.
+[ 97.5%] ep   3901/4000 | loss -0.0332 | reward +2.759 |    9.5s elapsed /    0.
+[ 98.0%] ep   3921/4000 | loss -0.0309 | reward +2.759 |    9.6s elapsed /    0.
+[ 98.5%] ep   3941/4000 | loss -0.0302 | reward +2.674 |    9.6s elapsed /    0.
+[ 99.0%] ep   3961/4000 | loss -0.0300 | reward +2.674 |    9.6s elapsed /    0.
+[ 99.5%] ep   3981/4000 | loss -0.0342 | reward +2.506 |    9.7s elapsed /    0.
+[100.0%] ep   4000/4000 | loss -0.0399 | reward +2.506 |    9.7s elapsed /    0.
+done: 4000 eps in 9.7s
+
+============================================================
+  Experiment: survey-local-8-N1
+  Method:     actor_critic
+  Agents:     1
+  Grid:       8x8
+  Episodes:   4000
+  Seeds:      5
+  Time:       9.8s
+------------------------------------------------------------
+  Final loss:   -0.0330 +/- 0.0065
+  Final reward: 2.66 +/- 0.20
+------------------------------------------------------------
+  Output: experiments/survey-local-8-N1
+============================================================
+

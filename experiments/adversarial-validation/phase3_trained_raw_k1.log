@@ -1,0 +1,12 @@
+Misbehavior-budget sweep: k∈[1]  ρ∈[0.0, 0.1, 0.25, 0.5, 0.75, 1.0]  seeds=30  max_steps=200  adversary_type=trained_red  nominal_mode=raw_obs
+
+=== k=1: configs/compromise-16x16-5-4b1r.yaml ===
+  k=1  ρ=0.00  M=0.00  cov=89.22 ± 3.95%   (min=78.6, max=95.4)   t=13.2s
+  k=1  ρ=0.10  M=0.10  cov=89.01 ± 3.56%   (min=82.1, max=96.9)   t=12.8s
+  k=1  ρ=0.25  M=0.25  cov=88.74 ± 4.88%   (min=76.5, max=96.4)   t=13.0s
+  k=1  ρ=0.50  M=0.50  cov=89.68 ± 4.04%   (min=78.6, max=95.9)   t=13.1s
+  k=1  ρ=0.75  M=0.75  cov=88.93 ± 2.66%   (min=83.7, max=94.9)   t=13.1s
+  k=1  ρ=1.00  M=1.00  cov=89.27 ± 4.34%   (min=75.5, max=95.9)   t=13.3s
+
+Total sweep time 78.8s  (180 episodes)
+Saved experiments/adversarial-validation/phase3_trained_raw_k1.np

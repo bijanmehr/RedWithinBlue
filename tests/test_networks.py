@@ -6,7 +6,7 @@ import pytest
 
 from red_within_blue.training.networks import Actor, Critic, QNetwork
 
-OBS_DIM = 255
+OBS_DIM = 376
 NUM_ACTIONS = 5
 BATCH_SIZE = 32
 RNG = jax.random.PRNGKey(0)
@@ -27,7 +27,7 @@ def _split(n: int = 2):
 
 class TestActor:
     def test_output_shape_unbatched(self):
-        """Actor maps (255,) -> (5,)."""
+        """Actor maps (376,) -> (5,)."""
         init_key, obs_key = _split()
         obs = jax.random.normal(obs_key, (OBS_DIM,))
         actor = Actor(num_actions=NUM_ACTIONS)
@@ -36,7 +36,7 @@ class TestActor:
         assert logits.shape == (NUM_ACTIONS,), f"Expected ({NUM_ACTIONS},), got {logits.shape}"
 
     def test_output_shape_batched_vmap(self):
-        """vmap over Actor maps (32, 255) -> (32, 5)."""
+        """vmap over Actor maps (32, 376) -> (32, 5)."""
         init_key, obs_key = _split()
         obs_batch = jax.random.normal(obs_key, (BATCH_SIZE, OBS_DIM))
         actor = Actor(num_actions=NUM_ACTIONS)
@@ -56,7 +56,7 @@ class TestActor:
 
 class TestCritic:
     def test_output_shape_unbatched(self):
-        """Critic maps (255,) -> scalar ()."""
+        """Critic maps (376,) -> scalar ()."""
         init_key, obs_key = _split()
         obs = jax.random.normal(obs_key, (OBS_DIM,))
         critic = Critic()
@@ -71,7 +71,7 @@ class TestCritic:
 
 class TestQNetwork:
     def test_output_shape_unbatched(self):
-        """QNetwork maps (255,) -> (5,)."""
+        """QNetwork maps (376,) -> (5,)."""
         init_key, obs_key = _split()
         obs = jax.random.normal(obs_key, (OBS_DIM,))
         qnet = QNetwork(num_actions=NUM_ACTIONS)

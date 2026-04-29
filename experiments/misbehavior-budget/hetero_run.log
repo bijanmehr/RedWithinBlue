@@ -1,0 +1,18 @@
+Hetero-ρ sweep:  Σρ ∈ [0.5, 1.0]  steps=6  seeds=15  max_steps=200
+  config=configs/compromise-16x16-5-3b2r.yaml  blue=experiments/compromise-16x16-5-3b2r-coevo/checkpoint.npz  red=experiments/compromise-16x16-5-3b2r-coevo/joint_red_checkpoint.npz
+  Σρ=0.50  (ρA,ρB)=(0.250,0.250)  |asym|=0.000  cov=85.54 ± 9.26%   t=6.6s
+  Σρ=0.50  (ρA,ρB)=(0.200,0.300)  |asym|=0.100  cov=85.82 ± 5.19%   t=6.3s
+  Σρ=0.50  (ρA,ρB)=(0.150,0.350)  |asym|=0.200  cov=83.30 ± 7.11%   t=6.4s
+  Σρ=0.50  (ρA,ρB)=(0.100,0.400)  |asym|=0.300  cov=83.95 ± 6.42%   t=6.4s
+  Σρ=0.50  (ρA,ρB)=(0.050,0.450)  |asym|=0.400  cov=83.06 ± 6.98%   t=6.4s
+  Σρ=0.50  (ρA,ρB)=(0.000,0.500)  |asym|=0.500  cov=83.37 ± 7.78%   t=6.5s
+  Σρ=1.00  (ρA,ρB)=(0.500,0.500)  |asym|=0.000  cov=89.39 ± 4.27%   t=6.6s
+  Σρ=1.00  (ρA,ρB)=(0.400,0.600)  |asym|=0.200  cov=85.85 ± 6.19%   t=6.4s
+  Σρ=1.00  (ρA,ρB)=(0.300,0.700)  |asym|=0.400  cov=84.90 ± 4.99%   t=6.6s
+  Σρ=1.00  (ρA,ρB)=(0.200,0.800)  |asym|=0.600  cov=83.81 ± 5.94%   t=6.7s
+  Σρ=1.00  (ρA,ρB)=(0.100,0.900)  |asym|=0.800  cov=85.44 ± 5.86%   t=6.5s
+  Σρ=1.00  (ρA,ρB)=(0.000,1.000)  |asym|=1.000  cov=82.89 ± 6.26%   t=6.8s
+  [clean]  Σρ=0  cov=84.18 ± 9.02%
+
+Total sweep time 84.7s  (195 episodes)
+Saved experiments/misbehavior-budget/hetero_sweep.npz

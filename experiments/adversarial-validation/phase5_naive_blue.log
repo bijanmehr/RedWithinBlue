@@ -1,0 +1,8 @@
+Misbehavior-budget sweep: k∈[2]  ρ∈[1.0]  seeds=30  max_steps=200  adversary_type=trained_red  nominal_mode=clamp_team_id_zero
+  (blue checkpoint override: experiments/survey-local-16-N5-from-N4/checkpoint.npz)
+
+=== k=2: configs/compromise-16x16-5-3b2r.yaml ===
+  k=2  ρ=1.00  M=2.00  cov=93.35 ± 2.75%   (min=88.8, max=98.0)   t=14.4s
+
+Total sweep time 15.0s  (30 episodes)
+Saved experiments/adversarial-validation/phase5_naive_blue.npz

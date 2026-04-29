@@ -18,6 +18,7 @@ from __future__ import annotations
 
 from typing import Dict
 
+import jax
 import jax.numpy as jnp
 
 from red_within_blue.types import CELL_WALL, EnvState
@@ -81,18 +82,77 @@ def normalized_exploration_reward(
     return {f"agent_{i}": rewards[i] for i in range(num_agents)}
 
 
-def make_multi_agent_reward(disconnect_penalty: float = -0.5):
-    """Create a multi-agent reward function with configurable disconnect penalty.
+def make_multi_agent_reward(
+    disconnect_penalty: float = -0.5,
+    isolation_weight: float = 0.0,
+    cooperative_weight: float = 0.0,
+    revisit_weight: float = 0.0,
+    terminal_bonus_scale: float = 0.0,
+    terminal_bonus_divide: bool = True,
+    spread_weight: float = 0.0,
+    fog_potential_weight: float = 0.0,
+    num_red_agents: int = 0,
+):
+    """Create a multi-agent reward function with configurable cohesion terms.
 
     Parameters
     ----------
     disconnect_penalty : float
         Flat penalty per agent per step when the graph is fragmented.
-        More negative = harsher. Default -0.5.
+        More negative = harsher. Default ``-0.5``. Also gates the exploration
+        bonus: when the graph is disconnected, exploration is zeroed out.
+        Set to ``0.0`` to disable both the gate and the penalty.
+    isolation_weight : float
+        Per-agent penalty applied only to agents with ``degree == 0`` (no
+        neighbours). Kinder gradient than ``disconnect_penalty`` because it
+        targets the lonely agent rather than the whole team. ``0.0`` disables.
+    cooperative_weight : float
+        Bonus paid to agent ``j`` when a connected neighbour ``i`` discovers
+        a new cell (``adjacency[i, j] == True``). Directly rewards staying
+        within comm range of productive teammates — the natural cohesion
+        signal for the scan-sharing architecture. ``0.0`` disables.
+    revisit_weight : float
+        Per-agent penalty when the cell stepped into was already explored
+        (``prev_explored[pos] > 0``). Pushes agents toward unexplored cells.
+        ``0.0`` disables. Typical value ≪ self-discovery magnitude — too
+        strong and agents refuse to traverse explored cells to reach frontiers.
+    terminal_bonus_scale : float
+        At the terminal step, every agent receives a bonus proportional to
+        the team's final coverage fraction: ``scale * (explored / total)``.
+        ``0.0`` disables. Non-zero scale gives a dense end-of-episode signal
+        on overall map-coverage success.
+    terminal_bonus_divide : bool
+        When ``True``, the terminal bonus is split evenly across agents
+        (team total == ``scale * coverage``). When ``False``, every agent
+        receives the full amount (team total == ``N * scale * coverage``).
+    spread_weight : float
+        Per-agent bonus proportional to **mean L1 distance to teammates**.
+        Drives agents apart so they cover more ground without clustering.
+        Scale guidance: with `comm_radius=r`, the hard guardrail caps mean
+        pairwise dist at roughly ``r``. A weight of ``0.001`` yields a
+        per-step bonus in ``[0, r*0.001]`` — same order of magnitude as
+        the normalized exploration reward. ``0.0`` disables.
+    fog_potential_weight : float
+        Fog-of-war attraction term. Per step, each agent receives
+        ``+w * (prev_dist_to_unknown - new_dist_to_unknown)`` where the
+        distance is the L1 distance from the agent's cell to the nearest
+        never-visited non-wall cell. Positive when the agent moves *toward*
+        the unknown, negative when moving away. Each agent finds its own
+        nearest frontier, so the team naturally spreads across the fog
+        instead of all funnelling to the same edge. ``0.0`` disables.
+    num_red_agents : int
+        Number of red (adversarial) agents at the *end* of the agent list.
+        When ``> 0``, every blue reward term above is computed as usual for
+        the first ``N - num_red_agents`` slots; red slots are then overwritten
+        with ``-sum(blue_rewards) / num_red_agents`` so the per-step team
+        totals sum exactly to zero. This applies to *all* blue terms —
+        exploration, penalties, terminal bonus — so reds gain when blues
+        disconnect or fail as much as they gain when blues fail to explore.
+        ``0`` disables and the function returns blue-only behaviour.
 
     Returns
     -------
-    A reward function with the standard (new_state, prev_state, info) signature.
+    A reward function with the standard ``(new_state, prev_state, info)`` signature.
     """
     def _reward_fn(
         new_state: EnvState,
@@ -112,17 +172,99 @@ def make_multi_agent_reward(disconnect_penalty: float = -0.5):
         cols = positions[:, 1]
         prev_counts = prev_explored[rows, cols]
 
-        discovered = jnp.where(prev_counts == 0, 1.0, 0.0).astype(jnp.float32)
-        exploration = discovered / total_discoverable  # [N]
+        discovered_mask = (prev_counts == 0).astype(jnp.float32)           # [N]
+        # Bayesian framing: under a deterministic sensor, one visit
+        # disambiguates a cell (1 bit of entropy eliminated). Per-agent
+        # reward = ΔH at the agent's cell = log(2) if k was 0 else 0.
+        # Normalising by H₀ = N_playable · log(2) ≡ dividing by N_playable.
+        exploration = discovered_mask / total_discoverable                 # [N]
 
         # Gate exploration on connectivity: zero reward if disconnected
         exploration = jnp.where(is_connected, exploration, 0.0)
 
-        # Flat penalty when disconnected
+        # Flat penalty when whole graph is disconnected
         penalty = jnp.where(is_connected, 0.0, disconnect_penalty).astype(jnp.float32)
         penalty = jnp.broadcast_to(penalty, (num_agents,))
 
         rewards = exploration + penalty
+
+        # Per-agent isolation penalty: only the lonely agents
+        if isolation_weight != 0.0:
+            degree = info["degree"]  # [N]
+            iso = jnp.where(degree == 0, isolation_weight, 0.0).astype(jnp.float32)
+            rewards = rewards + iso
+
+        # Revisit penalty: per-agent, triggered when stepping on an already-explored cell
+        if revisit_weight != 0.0:
+            revisit = jnp.where(prev_counts > 0, revisit_weight, 0.0).astype(jnp.float32)
+            rewards = rewards + revisit
+
+        # Cooperative bonus: reward agents for their neighbours' discoveries
+        if cooperative_weight != 0.0:
+            adjacency = info["adjacency"]  # [N, N] bool; adjacency[i, j] = i can send to j
+            neighbour_disc = jnp.dot(
+                adjacency.T.astype(jnp.float32), discovered_mask
+            )  # [N]
+            rewards = rewards + (neighbour_disc * cooperative_weight).astype(jnp.float32)
+
+        # Terminal coverage bonus: proportional to final coverage fraction
+        if terminal_bonus_scale != 0.0:
+            done = new_state.global_state.done
+            explored_mask = (new_state.global_state.grid.explored > 0) & (terrain != CELL_WALL)
+            coverage = explored_mask.sum().astype(jnp.float32) / total_discoverable
+            per_agent = coverage * terminal_bonus_scale
+            if terminal_bonus_divide:
+                per_agent = per_agent / jnp.float32(num_agents)
+            bonus = jnp.where(done, per_agent, 0.0).astype(jnp.float32)
+            rewards = rewards + jnp.broadcast_to(bonus, (num_agents,))
+
+        # Spread bonus: reward agents for being far from teammates.
+        # Per-agent mean L1 distance to other agents.  With N=1 there is
+        # no teammate, so the term contributes 0.
+        if spread_weight != 0.0 and num_agents > 1:
+            diff = positions[:, None, :] - positions[None, :, :]      # [N, N, 2]
+            pairwise = jnp.sum(jnp.abs(diff), axis=-1).astype(jnp.float32)  # [N, N]
+            # Sum over j (including self, which contributes 0), divide by (N-1)
+            mean_dist = jnp.sum(pairwise, axis=-1) / jnp.float32(num_agents - 1)  # [N]
+            rewards = rewards + (mean_dist * spread_weight).astype(jnp.float32)
+
+        # Fog-of-war potential: reward each agent for reducing its L1
+        # distance to the nearest never-visited non-wall cell. Uses
+        # prev_explored (pre-step) and new_explored (post-step) to compute
+        # ΔΦ where Φ(agent) = −min L1 over unknown cells. Positive when
+        # moving toward fog; negative when moving away.
+        if fog_potential_weight != 0.0:
+            new_explored = new_state.global_state.grid.explored            # [H, W]
+            non_wall = (terrain != CELL_WALL)                              # [H, W] bool
+            unknown_prev = ((prev_explored == 0) & non_wall).astype(jnp.float32)
+            unknown_new = ((new_explored == 0) & non_wall).astype(jnp.float32)
+
+            H, W = terrain.shape
+            rows_grid = jnp.arange(H, dtype=jnp.int32)[:, None]            # [H, 1]
+            cols_grid = jnp.arange(W, dtype=jnp.int32)[None, :]            # [1, W]
+
+            prev_positions = prev_state.agent_state.positions              # [N, 2]
+
+            def _min_unknown_dist(pos_row, pos_col, unknown_mask):
+                # L1 distance from (pos_row, pos_col) to every cell
+                dist = (jnp.abs(rows_grid - pos_row) + jnp.abs(cols_grid - pos_col)).astype(jnp.float32)
+                # Mask out known/wall cells with a big number
+                masked = jnp.where(unknown_mask > 0.5, dist, jnp.float32(1e6))
+                # If no unknown cells remain, return 0 so ΔΦ is 0 (no pull).
+                any_unknown = jnp.any(unknown_mask > 0.5)
+                return jnp.where(any_unknown, jnp.min(masked), jnp.float32(0.0))
+
+            prev_dist = jax.vmap(lambda p: _min_unknown_dist(p[0], p[1], unknown_prev))(prev_positions)
+            new_dist = jax.vmap(lambda p: _min_unknown_dist(p[0], p[1], unknown_new))(positions)
+            fog_bonus = fog_potential_weight * (prev_dist - new_dist)
+            rewards = rewards + fog_bonus.astype(jnp.float32)
+
+        if num_red_agents > 0:
+            num_blue = num_agents - num_red_agents
+            blue_sum = jnp.sum(rewards[:num_blue])
+            per_red = (-blue_sum / jnp.float32(num_red_agents)).astype(jnp.float32)
+            red_rewards = jnp.broadcast_to(per_red, (num_red_agents,))
+            rewards = jnp.concatenate([rewards[:num_blue], red_rewards], axis=0)
 
         return {f"agent_{i}": rewards[i] for i in range(num_agents)}
 
@@ -131,6 +273,40 @@ def make_multi_agent_reward(disconnect_penalty: float = -0.5):
 
 # Backwards-compatible default instance
 multi_agent_reward = make_multi_agent_reward(-0.5)
+
+
+def normalized_competitive_reward(
+    new_state: EnvState,
+    prev_state: EnvState,
+    info: Dict,
+) -> Dict[str, jnp.ndarray]:
+    """Zero-sum reward: blue (team_id==0) gets +exploration, red (team_id==1) gets -exploration.
+
+    Same normalization scheme as ``normalized_exploration_reward`` (divided by
+    total discoverable cells), so magnitudes match the single-agent baseline
+    and warm-started policies see a compatible reward scale.
+    """
+    num_agents = new_state.agent_state.positions.shape[0]
+    positions = new_state.agent_state.positions
+    team_ids = new_state.agent_state.team_ids
+    prev_explored = prev_state.global_state.grid.explored
+    terrain = new_state.global_state.grid.terrain
+
+    total_discoverable = jnp.maximum(
+        jnp.sum(terrain != CELL_WALL).astype(jnp.float32), 1.0
+    )
+
+    rows = positions[:, 0]
+    cols = positions[:, 1]
+    prev_counts = prev_explored[rows, cols]
+
+    discovered = jnp.where(prev_counts == 0, 1.0, 0.0).astype(jnp.float32)
+    base = discovered / total_discoverable  # [N]
+
+    sign = jnp.where(team_ids == 0, 1.0, -1.0).astype(jnp.float32)
+    rewards = base * sign
+
+    return {f"agent_{i}": rewards[i] for i in range(num_agents)}
 
 
 # ---------------------------------------------------------------------------

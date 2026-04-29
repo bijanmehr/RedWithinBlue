@@ -19,7 +19,7 @@ from red_within_blue.visualizer import render_frame, EnvDashboard
 def _small_config(**overrides):
     defaults = dict(
         grid_width=8, grid_height=8, num_agents=2, max_steps=10,
-        obs_radius=2, comm_radius=5.0, msg_dim=4, wall_density=0.0,
+        obs_radius=2, comm_radius=5.0, wall_density=0.0,
     )
     defaults.update(overrides)
     return EnvConfig(**defaults)

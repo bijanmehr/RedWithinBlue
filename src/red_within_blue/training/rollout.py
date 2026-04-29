@@ -59,7 +59,13 @@ def _connectivity_mask(positions: np.ndarray, comm_ranges: np.ndarray,
     Returns
     -------
     (5,) bool array — True for actions that maintain connectivity.
-    If no action maintains connectivity, all are True (fallback).
+    If no action maintains connectivity, only STAY (action 0) is allowed.
+    This matches the JIT training-path semantics in
+    ``_connectivity_guardrail`` (force-STAY on disconnect) and prevents
+    cascading fragmentation from a brittle-chain configuration: previously
+    the all-True fallback released the agent to take any action including
+    disconnecting ones, which then made every subsequent agent's mask
+    empty too.
     """
     N = positions.shape[0]
     if N < 2:
@@ -87,9 +93,9 @@ def _connectivity_mask(positions: np.ndarray, comm_ranges: np.ndarray,
         _, connected = compute_components(adj)
         mask[a] = bool(connected)
 
-    # If nothing maintains connectivity, allow everything
+    # If nothing maintains connectivity, force STAY (matches JIT training path).
     if not mask.any():
-        mask[:] = True
+        mask[0] = True
 
     return mask
 
@@ -603,6 +609,9 @@ def collect_episode_multi_scan(
     key: jax.Array,
     max_steps: int,
     enforce_connectivity: bool = False,
+    red_policy: str = "shared",
+    num_red_agents: int = 0,
+    epsilon: float = 0.0,
 ) -> MultiTrajectory:
     """Collect one episode of multi-agent experience using ``jax.lax.scan``.
 
@@ -623,6 +632,13 @@ def collect_episode_multi_scan(
         Number of environment steps to collect.
     enforce_connectivity : bool
         If True, apply the connectivity guardrail after sampling actions.
+    red_policy : str
+        ``"shared"`` — red agents use the same actor as blue (default).
+        ``"random"`` — the last ``num_red_agents`` entries' sampled actions
+        are replaced with uniform-random actions.
+    num_red_agents : int
+        Count of red agents occupying the last indices.  Only used when
+        ``red_policy == "random"``.
 
     Returns
     -------
@@ -633,12 +649,16 @@ def collect_episode_multi_scan(
     obs_dict, state = env.reset(reset_key)
 
     num_agents = env.config.num_agents
+    num_actions = env.config.num_actions
+
+    # Trace-time mask: True for red agent indices (last num_red_agents entries).
+    red_idx_mask = jnp.arange(num_agents) >= (num_agents - num_red_agents)
 
     def _scan_body(carry, _step_idx):
         state, rng, cumulative_done = carry
 
         # Split keys
-        rng, policy_key, step_key = jax.random.split(rng, 3)
+        rng, policy_key, step_key, red_key, eps_key, eps_act_key = jax.random.split(rng, 6)
 
         # Get observations from state
         obs_all = env.obs_array(state)  # [N, obs_dim]
@@ -653,6 +673,22 @@ def collect_episode_multi_scan(
         actions = jax.vmap(jax.random.categorical)(
             agent_keys, all_logits
         )  # [N]
+
+        # Epsilon-greedy override: per-agent coin flip, replace with uniform.
+        # JIT-safe: uses jnp.where so the branch is fused with eps=0 -> all-False mask.
+        coin = jax.random.uniform(eps_key, shape=(num_agents,))
+        eps_mask = coin < epsilon                                       # [N] bool
+        rand_actions = jax.random.randint(
+            eps_act_key, shape=(num_agents,), minval=0, maxval=num_actions,
+        )
+        actions = jnp.where(eps_mask, rand_actions, actions)
+
+        # Random-red override: replace red agents' actions with uniform samples.
+        if red_policy == "random" and num_red_agents > 0:
+            rand_red_actions = jax.random.randint(
+                red_key, shape=(num_agents,), minval=0, maxval=num_actions,
+            )
+            actions = jnp.where(red_idx_mask, rand_red_actions, actions)
 
         # Compute log probabilities
         all_log_probs_full = jax.nn.log_softmax(all_logits)  # [N, num_actions]
@@ -712,4 +748,129 @@ def collect_episode_multi_scan(
         dones=done_seq,       # [T]
         log_probs=lp_seq,     # [T, N]
         mask=mask_seq,        # [T]
+    )
+
+
+# ---------------------------------------------------------------------------
+# Dec-POMDP blue + POMDP red (joint-policy) rollout
+# ---------------------------------------------------------------------------
+
+
+def collect_episode_multi_scan_joint(
+    env: GridCommEnv,
+    blue_actor: nn.Module,
+    blue_params,
+    joint_red_actor: nn.Module,
+    joint_red_params,
+    key: jax.Array,
+    max_steps: int,
+    num_red_agents: int,
+    enforce_connectivity: bool = False,
+) -> MultiTrajectory:
+    """POSG rollout: Dec-POMDP blue + centralized POMDP red.
+
+    Blue agents (indices ``[0:n_blue]``) act independently through a
+    parameter-shared per-agent ``Actor``. Red agents (indices
+    ``[n_blue:N]``) are driven by a single centralized ``JointRedActor``
+    that consumes the concatenation of all red observations and outputs
+    factorized action logits of shape ``[n_red, num_actions]``.
+
+    The returned ``MultiTrajectory.log_probs`` keeps the ``[T, N]`` layout:
+    the blue slice holds per-agent log-probs (decentralized); the red slice
+    holds the per-head log-probs from the joint policy (their sum along the
+    red axis is the joint log-prob of the red action vector).
+
+    Parameters
+    ----------
+    env : GridCommEnv
+    blue_actor, blue_params : per-agent policy for blue.
+    joint_red_actor, joint_red_params : centralized joint red policy.
+    key : PRNG key.
+    max_steps : trajectory length.
+    num_red_agents : n_red; red agents occupy the last indices.
+    """
+    key, reset_key = jax.random.split(key)
+    _obs_dict, state = env.reset(reset_key)
+
+    num_agents = env.config.num_agents
+    num_actions = env.config.num_actions
+    n_red = num_red_agents
+    n_blue = num_agents - n_red
+
+    def _scan_body(carry, _step_idx):
+        state, rng, cumulative_done = carry
+
+        rng, blue_key, red_key, step_key = jax.random.split(rng, 4)
+
+        obs_all = env.obs_array(state)  # [N, obs_dim]
+
+        # -- Blue: per-agent decentralized actor --
+        blue_obs = obs_all[:n_blue]                                     # [n_blue, obs_dim]
+        blue_logits = jax.vmap(blue_actor.apply, in_axes=(None, 0))(
+            blue_params, blue_obs,
+        )                                                               # [n_blue, num_actions]
+        blue_keys = jax.random.split(blue_key, n_blue)
+        blue_actions = jax.vmap(jax.random.categorical)(blue_keys, blue_logits)  # [n_blue]
+        blue_log_probs_full = jax.nn.log_softmax(blue_logits)           # [n_blue, num_actions]
+        blue_log_probs = jax.vmap(lambda lp, a: lp[a])(
+            blue_log_probs_full, blue_actions,
+        )                                                               # [n_blue]
+
+        # -- Red: centralized joint actor --
+        red_obs_joint = obs_all[n_blue:].reshape(-1)                    # [n_red * obs_dim]
+        red_logits = joint_red_actor.apply(joint_red_params, red_obs_joint)  # [n_red, num_actions]
+        red_keys = jax.random.split(red_key, n_red)
+        red_actions = jax.vmap(jax.random.categorical)(red_keys, red_logits)  # [n_red]
+        red_log_probs_full = jax.nn.log_softmax(red_logits)             # [n_red, num_actions]
+        red_log_probs = jax.vmap(lambda lp, a: lp[a])(
+            red_log_probs_full, red_actions,
+        )                                                               # [n_red]
+
+        actions = jnp.concatenate([blue_actions, red_actions], axis=0)  # [N]
+        log_probs_full = jnp.concatenate(
+            [blue_log_probs_full, red_log_probs_full], axis=0,
+        )                                                               # [N, num_actions]
+
+        # Optional hard guardrail: force-STAY any agent whose move would
+        # fragment the comm graph. Required for the asymmetric fog-of-war
+        # mechanic — red→blue belief contamination flows along comm edges,
+        # so a fragmented graph silently kills the channel.
+        safe_actions = jax.lax.cond(
+            jnp.bool_(enforce_connectivity) & (num_agents >= 2),
+            lambda acts: _connectivity_guardrail(
+                state.agent_state.positions,
+                state.agent_state.comm_ranges,
+                acts,
+                state.global_state.grid.terrain,
+            ),
+            lambda acts: acts,
+            actions,
+        )
+        # Recompute log-probs against possibly-overridden actions so the
+        # policy gradient targets what the env actually executed.
+        safe_log_probs = jax.vmap(lambda lp, a: lp[a])(log_probs_full, safe_actions)
+
+        _obs_new, new_state, rewards, done, _info = env.step_array(
+            step_key, state, safe_actions,
+        )
+
+        mask = 1.0 - cumulative_done.astype(jnp.float32)
+        masked_rewards = rewards * mask                                 # [N]
+        new_cumulative_done = cumulative_done | done
+
+        step_data = (obs_all, safe_actions, masked_rewards, done, safe_log_probs, mask)
+        return (new_state, rng, new_cumulative_done), step_data
+
+    init_carry = (state, key, jnp.bool_(False))
+    _final_carry, (obs_seq, act_seq, rew_seq, done_seq, lp_seq, mask_seq) = (
+        jax.lax.scan(_scan_body, init_carry, jnp.arange(max_steps))
+    )
+
+    return MultiTrajectory(
+        obs=obs_seq,
+        actions=act_seq,
+        rewards=rew_seq,
+        dones=done_seq,
+        log_probs=lp_seq,
+        mask=mask_seq,
     )

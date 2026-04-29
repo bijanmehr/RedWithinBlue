@@ -1,0 +1,10 @@
+{
+  "variant": "B1",
+  "num_seeds": 3,
+  "total_env_steps": 500000,
+  "eval_every_steps": 25000,
+  "num_eval_eps": 8,
+  "final_blue_reward_mean": 1.2191326419512432,
+  "final_red_reward_mean": -1.828698992729187,
+  "wall_seconds": 2650.4529280662537
+}

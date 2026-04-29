@@ -1,0 +1,28 @@
+{
+  "blocks": [
+    "scan",
+    "seen",
+    "map_frac",
+    "norm_pos",
+    "uid"
+  ],
+  "agent_mean_per_block": {
+    "scan": 0.5786648731813258,
+    "seen": 0.2554988073467932,
+    "map_frac": 0.4803323675708084,
+    "norm_pos": 0.8923949461601053,
+    "uid": 0.4685342571822306
+  },
+  "team_mean_per_block": {
+    "scan": 0.0,
+    "seen": 0.37021720749774484,
+    "map_frac": 0.26362398747194676,
+    "norm_pos": 0.0,
+    "uid": 0.0
+  },
+  "team_share": 0.19153525569303137,
+  "n_steps": 200,
+  "n_blue": 3,
+  "setup": "C2",
+  "method": "counterfactual no-comm split (agent_frac = solo / merged per dim)"
+}

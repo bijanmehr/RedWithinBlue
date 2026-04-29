@@ -1,0 +1,232 @@
+
+===========================================================
+ Experiment : survey-local-8-N2
+ Config     : configs/survey-local-8-N2.yaml
+ Method     : actor_critic
+ Env        : 8x8, N=2, steps=80
+ Train      : 2000 eps x 5 seed(s), lr=0.0001, gamma=0.99
+ Warm-start : experiments/survey-local-8-N1/checkpoint.npz
+===========================================================
+
+Warm-starting from: experiments/survey-local-8-N1/checkpoint.npz
+Grid-aware warm-start: tiling Dense_0 (1-block source -> 2-block target via tile x2, no grid upsample) — per-block obs_dim unchanged at 23.
+Warm-started critic: input 23 -> 46, hidden 128, source_N=1 target_N=2.
+survey-local-8-N2 (5 seeds): 0 / 2000 eps ...
+[  0.1%] ep      1/2000 | loss +0.5037 | reward +5.174 |    1.4s elapsed / 2749.
+[  0.6%] ep     11/2000 | loss -0.1097 | reward +4.709 |    1.4s elapsed /  258.
+[  1.1%] ep     21/2000 | loss +0.3060 | reward +5.328 |    1.5s elapsed /  139.
+[  1.6%] ep     31/2000 | loss -0.0269 | reward +4.864 |    1.5s elapsed /   97.
+[  2.0%] ep     41/2000 | loss +0.5392 | reward +5.174 |    1.6s elapsed /   75.
+[  2.5%] ep     51/2000 | loss +0.0723 | reward +5.019 |    1.6s elapsed /   62.
+[  3.0%] ep     61/2000 | loss +0.2144 | reward +4.864 |    1.7s elapsed /   53.
+[  3.5%] ep     71/2000 | loss +0.2049 | reward +5.019 |    1.7s elapsed /   47.
+[  4.0%] ep     81/2000 | loss -1.3163 | reward +3.315 |    1.8s elapsed /   42.
+[  4.5%] ep     91/2000 | loss +0.1395 | reward +5.019 |    1.9s elapsed /   38.
+[  5.0%] ep    101/2000 | loss +0.2813 | reward +5.328 |    1.9s elapsed /   35.
+[  5.5%] ep    111/2000 | loss +0.0687 | reward +5.174 |    2.0s elapsed /   33.
+[  6.0%] ep    121/2000 | loss +0.2629 | reward +5.328 |    2.0s elapsed /   31.
+[  6.5%] ep    131/2000 | loss +0.1706 | reward +5.174 |    2.1s elapsed /   29.
+[  7.0%] ep    141/2000 | loss -0.2127 | reward +4.864 |    2.1s elapsed /   28.
+[  7.5%] ep    151/2000 | loss +0.0172 | reward +5.174 |    2.2s elapsed /   26.
+[  8.1%] ep    161/2000 | loss -0.2467 | reward +4.709 |    2.2s elapsed /   25.
+[  8.6%] ep    171/2000 | loss +0.4195 | reward +5.328 |    2.3s elapsed /   24.
+[  9.1%] ep    181/2000 | loss +0.4071 | reward +5.328 |    2.3s elapsed /   23.
+[  9.6%] ep    191/2000 | loss -0.2895 | reward +4.864 |    2.4s elapsed /   22.
+[ 10.1%] ep    201/2000 | loss +0.0386 | reward +5.174 |    2.4s elapsed /   21.
+[ 10.6%] ep    211/2000 | loss +0.0657 | reward +5.019 |    2.5s elapsed /   21.
+[ 11.1%] ep    221/2000 | loss +0.0377 | reward +5.174 |    2.5s elapsed /   20.
+[ 11.6%] ep    231/2000 | loss -4.8116 | reward -0.258 |    2.6s elapsed /   19.
+[ 12.1%] ep    241/2000 | loss -0.0147 | reward +5.174 |    2.7s elapsed /   19.
+[ 12.6%] ep    251/2000 | loss -4.9677 | reward -0.258 |    2.7s elapsed /   18.
+[ 13.1%] ep    261/2000 | loss +0.1901 | reward +5.328 |    2.8s elapsed /   18.
+[ 13.6%] ep    271/2000 | loss -0.0651 | reward +5.174 |    2.8s elapsed /   18.
+[ 14.1%] ep    281/2000 | loss +0.0852 | reward +5.174 |    2.9s elapsed /   17.
+[ 14.6%] ep    291/2000 | loss -5.6771 | reward -0.258 |    2.9s elapsed /   17.
+[ 15.1%] ep    301/2000 | loss +0.4692 | reward +5.174 |    3.0s elapsed /   16.
+[ 15.6%] ep    311/2000 | loss +0.5184 | reward +5.328 |    3.0s elapsed /   16.
+[ 16.1%] ep    321/2000 | loss +0.0877 | reward +5.328 |    3.1s elapsed /   16.
+[ 16.6%] ep    331/2000 | loss -0.0142 | reward +5.174 |    3.1s elapsed /   15.
+[ 17.1%] ep    341/2000 | loss -0.2370 | reward +4.395 |    3.2s elapsed /   15.
+[ 17.6%] ep    351/2000 | loss +1.0592 | reward +5.328 |    3.2s elapsed /   15.
+[ 18.1%] ep    361/2000 | loss +0.1418 | reward +5.174 |    3.3s elapsed /   15.
+[ 18.6%] ep    371/2000 | loss -6.0986 | reward -0.258 |    3.4s elapsed /   14.
+[ 19.1%] ep    381/2000 | loss -0.0555 | reward +5.328 |    3.4s elapsed /   14.
+[ 19.6%] ep    391/2000 | loss -0.2032 | reward +4.864 |    3.5s elapsed /   14.
+[ 20.1%] ep    401/2000 | loss -0.0561 | reward +5.019 |    3.5s elapsed /   14.
+[ 20.6%] ep    411/2000 | loss +0.1113 | reward +5.019 |    3.6s elapsed /   13.
+[ 21.1%] ep    421/2000 | loss +0.0305 | reward +5.328 |    3.6s elapsed /   13.
+[ 21.6%] ep    431/2000 | loss -0.0978 | reward +5.174 |    3.7s elapsed /   13.
+[ 22.1%] ep    441/2000 | loss -0.1046 | reward +5.015 |    3.7s elapsed /   13.
+[ 22.6%] ep    451/2000 | loss +0.2740 | reward +5.174 |    3.8s elapsed /   13.
+[ 23.1%] ep    461/2000 | loss +0.1385 | reward +5.328 |    3.8s elapsed /   12.
+[ 23.6%] ep    471/2000 | loss -0.0808 | reward +5.019 |    3.9s elapsed /   12.
+[ 24.1%] ep    481/2000 | loss -0.1118 | reward +5.015 |    3.9s elapsed /   12.
+[ 24.6%] ep    491/2000 | loss -0.4208 | reward +4.864 |    4.0s elapsed /   12.
+[ 25.1%] ep    501/2000 | loss +0.2895 | reward +5.174 |    4.0s elapsed /   12.
+[ 25.6%] ep    511/2000 | loss +0.2749 | reward +5.174 |    4.1s elapsed /   12.
+[ 26.1%] ep    521/2000 | loss -1.2351 | reward +3.780 |    4.2s elapsed /   11.
+[ 26.6%] ep    531/2000 | loss -0.0514 | reward +5.174 |    4.2s elapsed /   11.
+[ 27.1%] ep    541/2000 | loss -7.2954 | reward -0.258 |    4.3s elapsed /   11.
+[ 27.6%] ep    551/2000 | loss +0.0824 | reward +5.019 |    4.3s elapsed /   11.
+[ 28.1%] ep    561/2000 | loss +0.3687 | reward +5.174 |    4.4s elapsed /   11.
+[ 28.6%] ep    571/2000 | loss +0.0434 | reward +5.174 |    4.4s elapsed /   11.
+[ 29.1%] ep    581/2000 | loss -0.0738 | reward +5.019 |    4.5s elapsed /   10.
+[ 29.6%] ep    591/2000 | loss +0.0728 | reward +5.328 |    4.5s elapsed /   10.
+[ 30.1%] ep    601/2000 | loss +0.6213 | reward +5.174 |    4.6s elapsed /   10.
+[ 30.6%] ep    611/2000 | loss -0.2560 | reward +4.554 |    4.6s elapsed /   10.
+[ 31.1%] ep    621/2000 | loss +0.0485 | reward +5.328 |    4.7s elapsed /   10.
+[ 31.6%] ep    631/2000 | loss +0.5050 | reward +5.328 |    4.7s elapsed /   10.
+[ 32.0%] ep    641/2000 | loss +0.0179 | reward +5.328 |    4.8s elapsed /   10.
+[ 32.5%] ep    651/2000 | loss +0.2111 | reward +5.174 |    4.9s elapsed /   10.
+[ 33.0%] ep    661/2000 | loss +0.3885 | reward +5.328 |    4.9s elapsed /    9.
+[ 33.5%] ep    671/2000 | loss +0.0538 | reward +5.328 |    5.0s elapsed /    9.
+[ 34.0%] ep    681/2000 | loss +0.3437 | reward +5.328 |    5.0s elapsed /    9.
+[ 34.5%] ep    691/2000 | loss +0.0557 | reward +5.328 |    5.1s elapsed /    9.
+[ 35.0%] ep    701/2000 | loss -0.4033 | reward +4.864 |    5.1s elapsed /    9.
+[ 35.5%] ep    711/2000 | loss -8.2062 | reward -0.258 |    5.2s elapsed /    9.
+[ 36.0%] ep    721/2000 | loss +1.1582 | reward +5.328 |    5.2s elapsed /    9.
+[ 36.5%] ep    731/2000 | loss -8.3507 | reward -0.258 |    5.3s elapsed /    9.
+[ 37.0%] ep    741/2000 | loss +0.0172 | reward +5.174 |    5.3s elapsed /    9.
+[ 37.5%] ep    751/2000 | loss -0.2142 | reward +5.174 |    5.4s elapsed /    9.
+[ 38.0%] ep    761/2000 | loss -0.3010 | reward +4.554 |    5.4s elapsed /    8.
+[ 38.5%] ep    771/2000 | loss +0.5062 | reward +5.019 |    5.5s elapsed /    8.
+[ 39.0%] ep    781/2000 | loss +0.0946 | reward +5.174 |    5.5s elapsed /    8.
+[ 39.5%] ep    791/2000 | loss +0.1663 | reward +5.174 |    5.6s elapsed /    8.
+[ 40.0%] ep    801/2000 | loss +0.3296 | reward +4.709 |    5.7s elapsed /    8.
+[ 40.5%] ep    811/2000 | loss +0.3896 | reward +5.174 |    5.7s elapsed /    8.
+[ 41.0%] ep    821/2000 | loss +0.0433 | reward +5.174 |    5.8s elapsed /    8.
+[ 41.5%] ep    831/2000 | loss +0.1101 | reward +5.019 |    5.8s elapsed /    8.
+[ 42.0%] ep    841/2000 | loss +0.0354 | reward +5.328 |    5.9s elapsed /    8.
+[ 42.5%] ep    851/2000 | loss -0.0247 | reward +5.174 |    5.9s elapsed /    8.
+[ 43.0%] ep    861/2000 | loss -0.5357 | reward +4.709 |    6.0s elapsed /    7.
+[ 43.5%] ep    871/2000 | loss -0.0832 | reward +4.709 |    6.0s elapsed /    7.
+[ 44.0%] ep    881/2000 | loss +0.1046 | reward +5.328 |    6.1s elapsed /    7.
+[ 44.5%] ep    891/2000 | loss -0.1398 | reward +5.174 |    6.1s elapsed /    7.
+[ 45.0%] ep    901/2000 | loss +0.4952 | reward +5.174 |    6.2s elapsed /    7.
+[ 45.5%] ep    911/2000 | loss -0.0509 | reward +5.174 |    6.2s elapsed /    7.
+[ 46.0%] ep    921/2000 | loss +0.3005 | reward +5.328 |    6.3s elapsed /    7.
+[ 46.5%] ep    931/2000 | loss +0.0699 | reward +5.174 |    6.3s elapsed /    7.
+[ 47.0%] ep    941/2000 | loss -0.0930 | reward +5.174 |    6.4s elapsed /    7.
+[ 47.5%] ep    951/2000 | loss -0.0298 | reward +5.174 |    6.5s elapsed /    7.
+[ 48.0%] ep    961/2000 | loss +0.3746 | reward +5.328 |    6.5s elapsed /    7.
+[ 48.5%] ep    971/2000 | loss +0.2039 | reward +5.328 |    6.6s elapsed /    7.
+[ 49.0%] ep    981/2000 | loss -0.0086 | reward +5.174 |    6.6s elapsed /    6.
+[ 49.5%] ep    991/2000 | loss +0.2066 | reward +5.328 |    6.7s elapsed /    6.
+[ 50.0%] ep   1001/2000 | loss -0.0078 | reward +5.019 |    6.7s elapsed /    6.
+[ 50.5%] ep   1011/2000 | loss +0.3811 | reward +5.328 |    6.8s elapsed /    6.
+[ 51.0%] ep   1021/2000 | loss +0.3397 | reward +5.328 |    6.8s elapsed /    6.
+[ 51.5%] ep   1031/2000 | loss +0.1656 | reward +5.174 |    6.9s elapsed /    6.
+[ 52.0%] ep   1041/2000 | loss +0.0179 | reward +5.328 |    6.9s elapsed /    6.
+[ 52.5%] ep   1051/2000 | loss +0.2239 | reward +5.328 |    7.0s elapsed /    6.
+[ 53.0%] ep   1061/2000 | loss -0.0116 | reward +5.174 |    7.0s elapsed /    6.
+[ 53.5%] ep   1071/2000 | loss -0.0619 | reward +5.328 |    7.1s elapsed /    6.
+[ 54.0%] ep   1081/2000 | loss +0.4004 | reward +5.328 |    7.2s elapsed /    6.
+[ 54.5%] ep   1091/2000 | loss +0.2614 | reward +5.019 |    7.2s elapsed /    6.
+[ 55.0%] ep   1101/2000 | loss +0.0485 | reward +5.174 |    7.3s elapsed /    5.
+[ 55.5%] ep   1111/2000 | loss -0.1123 | reward +5.174 |    7.3s elapsed /    5.
+[ 56.0%] ep   1121/2000 | loss +0.5420 | reward +5.328 |    7.4s elapsed /    5.
+[ 56.5%] ep   1131/2000 | loss -0.1746 | reward +4.709 |    7.4s elapsed /    5.
+[ 57.0%] ep   1141/2000 | loss +0.1396 | reward +5.328 |    7.5s elapsed /    5.
+[ 57.5%] ep   1151/2000 | loss -0.1676 | reward +5.174 |    7.5s elapsed /    5.
+[ 58.0%] ep   1161/2000 | loss -0.2544 | reward +4.860 |    7.6s elapsed /    5.
+[ 58.5%] ep   1171/2000 | loss +0.1079 | reward +5.328 |    7.6s elapsed /    5.
+[ 59.0%] ep   1181/2000 | loss +0.0654 | reward +5.174 |    7.7s elapsed /    5.
+[ 59.5%] ep   1191/2000 | loss +0.1684 | reward +4.864 |    7.7s elapsed /    5.
+[ 60.0%] ep   1201/2000 | loss -0.0736 | reward +5.174 |    7.8s elapsed /    5.
+[ 60.5%] ep   1211/2000 | loss +0.2969 | reward +5.328 |    7.9s elapsed /    5.
+[ 61.0%] ep   1221/2000 | loss +0.0055 | reward +5.328 |    7.9s elapsed /    5.
+[ 61.5%] ep   1231/2000 | loss +0.4593 | reward +5.019 |    8.0s elapsed /    5.
+[ 62.0%] ep   1241/2000 | loss +0.1054 | reward +5.174 |    8.0s elapsed /    4.
+[ 62.5%] ep   1251/2000 | loss -0.0779 | reward +5.328 |    8.1s elapsed /    4.
+[ 63.0%] ep   1261/2000 | loss +0.0415 | reward +5.174 |    8.1s elapsed /    4.
+[ 63.5%] ep   1271/2000 | loss +0.0337 | reward +5.328 |    8.2s elapsed /    4.
+[ 64.0%] ep   1281/2000 | loss +0.3141 | reward +5.328 |    8.2s elapsed /    4.
+[ 64.5%] ep   1291/2000 | loss +0.1545 | reward +5.328 |    8.3s elapsed /    4.
+[ 65.0%] ep   1301/2000 | loss -0.3082 | reward +5.019 |    8.3s elapsed /    4.
+[ 65.5%] ep   1311/2000 | loss -0.2471 | reward +4.554 |    8.4s elapsed /    4.
+[ 66.0%] ep   1321/2000 | loss +0.0521 | reward +5.174 |    8.4s elapsed /    4.
+[ 66.5%] ep   1331/2000 | loss -0.1078 | reward +5.174 |    8.5s elapsed /    4.
+[ 67.0%] ep   1341/2000 | loss +0.1570 | reward +5.174 |    8.6s elapsed /    4.
+[ 67.5%] ep   1351/2000 | loss -0.0764 | reward +5.328 |    8.6s elapsed /    4.
+[ 68.0%] ep   1361/2000 | loss +0.4661 | reward +5.328 |    8.7s elapsed /    4.
+[ 68.5%] ep   1371/2000 | loss +0.2927 | reward +5.328 |    8.7s elapsed /    4.
+[ 69.0%] ep   1381/2000 | loss +0.2231 | reward +5.328 |    8.8s elapsed /    3.
+[ 69.5%] ep   1391/2000 | loss +0.1154 | reward +5.019 |    8.8s elapsed /    3.
+[ 70.0%] ep   1401/2000 | loss +0.0444 | reward +5.015 |    8.9s elapsed /    3.
+[ 70.5%] ep   1411/2000 | loss +0.0812 | reward +5.174 |    8.9s elapsed /    3.
+[ 71.0%] ep   1421/2000 | loss +0.2685 | reward +5.328 |    9.0s elapsed /    3.
+[ 71.5%] ep   1431/2000 | loss -0.9329 | reward +4.399 |    9.0s elapsed /    3.
+[ 72.0%] ep   1441/2000 | loss -0.0423 | reward +5.019 |    9.1s elapsed /    3.
+[ 72.5%] ep   1451/2000 | loss -0.0597 | reward +5.019 |    9.1s elapsed /    3.
+[ 73.0%] ep   1461/2000 | loss +0.2805 | reward +5.019 |    9.2s elapsed /    3.
+[ 73.5%] ep   1471/2000 | loss +0.0789 | reward +5.174 |    9.2s elapsed /    3.
+[ 74.0%] ep   1481/2000 | loss -0.1650 | reward +5.174 |    9.3s elapsed /    3.
+[ 74.5%] ep   1491/2000 | loss -0.1597 | reward +5.019 |    9.4s elapsed /    3.
+[ 75.0%] ep   1501/2000 | loss +0.0214 | reward +5.328 |    9.4s elapsed /    3.
+[ 75.5%] ep   1511/2000 | loss +0.3104 | reward +5.328 |    9.5s elapsed /    3.
+[ 76.0%] ep   1521/2000 | loss +0.3223 | reward +5.174 |    9.5s elapsed /    3.
+[ 76.5%] ep   1531/2000 | loss +0.2118 | reward +5.328 |    9.6s elapsed /    2.
+[ 77.0%] ep   1541/2000 | loss +0.2534 | reward +5.328 |    9.6s elapsed /    2.
+[ 77.5%] ep   1551/2000 | loss +0.2573 | reward +5.328 |    9.7s elapsed /    2.
+[ 78.0%] ep   1561/2000 | loss +0.2848 | reward +5.328 |    9.7s elapsed /    2.
+[ 78.5%] ep   1571/2000 | loss -0.4375 | reward +4.554 |    9.8s elapsed /    2.
+[ 79.0%] ep   1581/2000 | loss -0.0278 | reward +5.174 |    9.8s elapsed /    2.
+[ 79.5%] ep   1591/2000 | loss +0.1312 | reward +5.174 |    9.9s elapsed /    2.
+[ 80.0%] ep   1601/2000 | loss +0.0865 | reward +5.174 |    9.9s elapsed /    2.
+[ 80.5%] ep   1611/2000 | loss -12.4584 | reward -0.258 |   10.0s elapsed /    2
+[ 81.0%] ep   1621/2000 | loss -0.2410 | reward +4.864 |   10.1s elapsed /    2.
+[ 81.5%] ep   1631/2000 | loss -0.1832 | reward +5.019 |   10.1s elapsed /    2.
+[ 82.0%] ep   1641/2000 | loss +0.1533 | reward +4.709 |   10.2s elapsed /    2.
+[ 82.5%] ep   1651/2000 | loss -0.0423 | reward +5.019 |   10.2s elapsed /    2.
+[ 83.0%] ep   1661/2000 | loss +0.4381 | reward +5.328 |   10.3s elapsed /    2.
+[ 83.5%] ep   1671/2000 | loss -0.0844 | reward +5.019 |   10.3s elapsed /    2.
+[ 84.0%] ep   1681/2000 | loss +0.1250 | reward +5.174 |   10.4s elapsed /    2.
+[ 84.5%] ep   1691/2000 | loss -0.1072 | reward +5.174 |   10.4s elapsed /    1.
+[ 85.0%] ep   1701/2000 | loss +0.2704 | reward +5.328 |   10.5s elapsed /    1.
+[ 85.5%] ep   1711/2000 | loss +0.0378 | reward +5.174 |   10.5s elapsed /    1.
+[ 86.0%] ep   1721/2000 | loss -0.0250 | reward +5.019 |   10.6s elapsed /    1.
+[ 86.5%] ep   1731/2000 | loss +0.7565 | reward +5.328 |   10.6s elapsed /    1.
+[ 87.0%] ep   1741/2000 | loss +0.2828 | reward +5.328 |   10.7s elapsed /    1.
+[ 87.5%] ep   1751/2000 | loss +0.4531 | reward +5.312 |   10.7s elapsed /    1.
+[ 88.0%] ep   1761/2000 | loss +0.1293 | reward +5.328 |   10.8s elapsed /    1.
+[ 88.5%] ep   1771/2000 | loss +0.3056 | reward +5.015 |   10.9s elapsed /    1.
+[ 89.0%] ep   1781/2000 | loss +0.1743 | reward +5.328 |   10.9s elapsed /    1.
+[ 89.5%] ep   1791/2000 | loss -0.1984 | reward +5.174 |   11.0s elapsed /    1.
+[ 90.0%] ep   1801/2000 | loss +0.4227 | reward +5.328 |   11.0s elapsed /    1.
+[ 90.5%] ep   1811/2000 | loss +0.3235 | reward +5.328 |   11.1s elapsed /    1.
+[ 91.0%] ep   1821/2000 | loss +0.1111 | reward +5.174 |   11.1s elapsed /    1.
+[ 91.5%] ep   1831/2000 | loss -0.0466 | reward +5.019 |   11.2s elapsed /    1.
+[ 92.0%] ep   1841/2000 | loss -0.0686 | reward +4.864 |   11.2s elapsed /    1.
+[ 92.5%] ep   1851/2000 | loss +0.5696 | reward +5.174 |   11.3s elapsed /    0.
+[ 93.0%] ep   1861/2000 | loss +0.3648 | reward +4.709 |   11.3s elapsed /    0.
+[ 93.5%] ep   1871/2000 | loss -0.0530 | reward +5.328 |   11.4s elapsed /    0.
+[ 94.0%] ep   1881/2000 | loss -0.0233 | reward +5.328 |   11.4s elapsed /    0.
+[ 94.5%] ep   1891/2000 | loss +0.3039 | reward +5.328 |   11.5s elapsed /    0.
+[ 95.0%] ep   1901/2000 | loss -0.2513 | reward +4.709 |   11.5s elapsed /    0.
+[ 95.5%] ep   1911/2000 | loss -0.0644 | reward +5.174 |   11.6s elapsed /    0.
+[ 96.0%] ep   1921/2000 | loss +0.0154 | reward +5.174 |   11.7s elapsed /    0.
+[ 96.5%] ep   1931/2000 | loss +0.2197 | reward +5.328 |   11.7s elapsed /    0.
+[ 97.0%] ep   1941/2000 | loss +0.1104 | reward +5.328 |   11.8s elapsed /    0.
+[ 97.5%] ep   1951/2000 | loss +0.2544 | reward +4.864 |   11.8s elapsed /    0.
+[ 98.0%] ep   1961/2000 | loss +0.9813 | reward +5.328 |   11.9s elapsed /    0.
+[ 98.5%] ep   1971/2000 | loss +0.2564 | reward +5.328 |   11.9s elapsed /    0.
+[ 99.0%] ep   1981/2000 | loss -0.1135 | reward +5.328 |   12.0s elapsed /    0.
+[ 99.5%] ep   1991/2000 | loss +0.2481 | reward +5.328 |   12.0s elapsed /    0.
+[100.0%] ep   2000/2000 | loss -16.1486 | reward -0.258 |   12.1s elapsed /    0
+done: 2000 eps in 12.1s
+
+============================================================
+  Experiment: survey-local-8-N2
+  Method:     actor_critic
+  Agents:     2
+  Grid:       8x8
+  Episodes:   2000
+  Seeds:      5
+  Time:       12.6s
+------------------------------------------------------------
+  Final loss:   -6.9408 +/- 8.8838
+  Final reward: 3.09 +/- 2.74
+------------------------------------------------------------
+  Output: experiments/survey-local-8-N2
+============================================================
+

@@ -1,0 +1,232 @@
+
+============================================================
+ Experiment : survey-local-32-N8
+ Config     : configs/survey-local-32-N8.yaml
+ Method     : actor_critic
+ Env        : 32x32, N=8, steps=400
+ Train      : 1000 eps x 5 seed(s), lr=1e-05, gamma=0.99
+ Warm-start : experiments/survey-local-16-N4/checkpoint.npz
+============================================================
+
+Warm-starting from: experiments/survey-local-16-N4/checkpoint.npz
+Grid-aware warm-start: tiling Dense_0 (4-block source -> 8-block target via tile x2, no grid upsample) — per-block obs_dim unchanged at 23.
+Warm-started critic: input 92 -> 184, hidden 128, source_N=4 target_N=8.
+survey-local-32-N8 (5 seeds): 0 / 1000 eps ...
+[  0.1%] ep      1/1000 | loss -9.1949 | reward +18.456 |    1.8s elapsed / 1802
+[  0.6%] ep      6/1000 | loss -6.2297 | reward +17.566 |    2.3s elapsed /  373
+[  1.1%] ep     11/1000 | loss -4.7222 | reward +20.096 |    2.7s elapsed /  242
+[  1.6%] ep     16/1000 | loss -7.5131 | reward +14.674 |    3.2s elapsed /  193
+[  2.1%] ep     21/1000 | loss -10.4422 | reward +18.964 |    3.6s elapsed /  16
+[  2.6%] ep     26/1000 | loss -6.4125 | reward +21.971 |    4.0s elapsed /  151
+[  3.1%] ep     31/1000 | loss -8.8177 | reward +13.354 |    4.5s elapsed /  140
+[  3.6%] ep     36/1000 | loss -2.6134 | reward +19.546 |    4.9s elapsed /  132
+[  4.1%] ep     41/1000 | loss -3.8563 | reward +18.393 |    5.4s elapsed /  125
+[  4.6%] ep     46/1000 | loss -51.9121 | reward -4.729 |    5.8s elapsed /  120
+[  5.1%] ep     51/1000 | loss -5.3032 | reward +15.066 |    6.3s elapsed /  116
+[  5.6%] ep     56/1000 | loss -3.5235 | reward +20.317 |    6.7s elapsed /  113
+[  6.1%] ep     61/1000 | loss -5.1300 | reward +15.395 |    7.2s elapsed /  110
+[  6.6%] ep     66/1000 | loss -2.1785 | reward +22.497 |    7.6s elapsed /  107
+[  7.1%] ep     71/1000 | loss -6.2930 | reward +17.124 |    8.1s elapsed /  105
+[  7.6%] ep     76/1000 | loss -1.8287 | reward +17.521 |    8.5s elapsed /  103
+[  8.1%] ep     81/1000 | loss -2.9705 | reward +17.498 |    8.9s elapsed /  101
+[  8.6%] ep     86/1000 | loss -2.8108 | reward +18.949 |    9.4s elapsed /   99
+[  9.1%] ep     91/1000 | loss -3.1052 | reward +20.547 |    9.8s elapsed /   98
+[  9.6%] ep     96/1000 | loss -48.7919 | reward -3.129 |   10.3s elapsed /   96
+[ 10.1%] ep    101/1000 | loss -4.0553 | reward +15.136 |   10.7s elapsed /   95
+[ 10.6%] ep    106/1000 | loss -2.3513 | reward +17.671 |   11.2s elapsed /   94
+[ 11.1%] ep    111/1000 | loss +0.3660 | reward +20.547 |   11.6s elapsed /   93
+[ 11.6%] ep    116/1000 | loss +0.6429 | reward +19.796 |   12.1s elapsed /   92
+[ 12.1%] ep    121/1000 | loss -1.1227 | reward +17.000 |   12.5s elapsed /   91
+[ 12.6%] ep    126/1000 | loss +5.8214 | reward +18.411 |   13.0s elapsed /   90
+[ 13.1%] ep    131/1000 | loss -1.2033 | reward +17.710 |   13.4s elapsed /   89
+[ 13.6%] ep    136/1000 | loss -1.0090 | reward +16.499 |   13.9s elapsed /   88
+[ 14.1%] ep    141/1000 | loss -1.7203 | reward +15.162 |   14.3s elapsed /   87
+[ 14.6%] ep    146/1000 | loss +3.5735 | reward +20.735 |   14.8s elapsed /   86
+[ 15.1%] ep    151/1000 | loss +1.9687 | reward +17.717 |   15.2s elapsed /   85
+[ 15.6%] ep    156/1000 | loss -1.1719 | reward +16.646 |   15.7s elapsed /   84
+[ 16.1%] ep    161/1000 | loss +1.3478 | reward +20.168 |   16.1s elapsed /   84
+[ 16.6%] ep    166/1000 | loss -40.7350 | reward -3.929 |   16.6s elapsed /   83
+[ 17.1%] ep    171/1000 | loss +1.6206 | reward +18.549 |   17.0s elapsed /   82
+[ 17.6%] ep    176/1000 | loss +4.4740 | reward +20.710 |   17.5s elapsed /   81
+[ 18.1%] ep    181/1000 | loss +0.4438 | reward +17.876 |   17.9s elapsed /   81
+[ 18.6%] ep    186/1000 | loss +1.4264 | reward +19.632 |   18.4s elapsed /   80
+[ 19.1%] ep    191/1000 | loss -0.5231 | reward +16.443 |   18.8s elapsed /   79
+[ 19.6%] ep    196/1000 | loss +2.9738 | reward +22.157 |   19.3s elapsed /   79
+[ 20.1%] ep    201/1000 | loss +1.7840 | reward +19.570 |   19.7s elapsed /   78
+[ 20.6%] ep    206/1000 | loss -0.8757 | reward +20.052 |   20.2s elapsed /   77
+[ 21.1%] ep    211/1000 | loss +3.4282 | reward +22.705 |   20.6s elapsed /   77
+[ 21.6%] ep    216/1000 | loss -2.9003 | reward +16.831 |   21.1s elapsed /   76
+[ 22.1%] ep    221/1000 | loss +0.2654 | reward +20.109 |   21.5s elapsed /   75
+[ 22.6%] ep    226/1000 | loss +0.0455 | reward +19.190 |   22.0s elapsed /   75
+[ 23.1%] ep    231/1000 | loss -0.6569 | reward +17.658 |   22.4s elapsed /   74
+[ 23.6%] ep    236/1000 | loss -3.5183 | reward +13.840 |   22.9s elapsed /   74
+[ 24.1%] ep    241/1000 | loss -45.7795 | reward -3.929 |   23.4s elapsed /   73
+[ 24.6%] ep    246/1000 | loss -0.0961 | reward +16.508 |   23.8s elapsed /   72
+[ 25.1%] ep    251/1000 | loss +1.1832 | reward +17.929 |   24.2s elapsed /   72
+[ 25.6%] ep    256/1000 | loss -0.9300 | reward +17.455 |   24.7s elapsed /   71
+[ 26.1%] ep    261/1000 | loss -0.5294 | reward +17.094 |   25.2s elapsed /   71
+[ 26.6%] ep    266/1000 | loss +2.6419 | reward +17.400 |   25.6s elapsed /   70
+[ 27.1%] ep    271/1000 | loss -3.6774 | reward +17.386 |   26.1s elapsed /   70
+[ 27.6%] ep    276/1000 | loss +0.6613 | reward +17.359 |   26.5s elapsed /   69
+[ 28.1%] ep    281/1000 | loss -2.3860 | reward +15.905 |   27.0s elapsed /   69
+[ 28.6%] ep    286/1000 | loss +1.3311 | reward +15.943 |   27.4s elapsed /   68
+[ 29.1%] ep    291/1000 | loss -2.2818 | reward +15.586 |   27.9s elapsed /   67
+[ 29.6%] ep    296/1000 | loss +4.4007 | reward +20.039 |   28.3s elapsed /   67
+[ 30.1%] ep    301/1000 | loss +0.1971 | reward +16.336 |   28.8s elapsed /   66
+[ 30.6%] ep    306/1000 | loss -0.5117 | reward +16.788 |   29.2s elapsed /   66
+[ 31.1%] ep    311/1000 | loss -54.1052 | reward -3.929 |   29.7s elapsed /   65
+[ 31.6%] ep    316/1000 | loss -4.0338 | reward +13.294 |   30.1s elapsed /   65
+[ 32.1%] ep    321/1000 | loss +0.2335 | reward +17.899 |   30.6s elapsed /   64
+[ 32.6%] ep    326/1000 | loss -0.7197 | reward +16.479 |   31.0s elapsed /   64
+[ 33.1%] ep    331/1000 | loss -0.6206 | reward +17.478 |   31.5s elapsed /   63
+[ 33.6%] ep    336/1000 | loss -1.7624 | reward +15.201 |   32.0s elapsed /   63
+[ 34.1%] ep    341/1000 | loss -54.8972 | reward -3.929 |   32.4s elapsed /   62
+[ 34.6%] ep    346/1000 | loss +2.2574 | reward +18.998 |   32.9s elapsed /   62
+[ 35.1%] ep    351/1000 | loss -2.7763 | reward +14.196 |   33.3s elapsed /   61
+[ 35.6%] ep    356/1000 | loss -1.3230 | reward +16.155 |   33.8s elapsed /   61
+[ 36.1%] ep    361/1000 | loss +0.0477 | reward +15.729 |   34.2s elapsed /   60
+[ 36.6%] ep    366/1000 | loss -0.1184 | reward +17.975 |   34.7s elapsed /   60
+[ 37.1%] ep    371/1000 | loss +1.5681 | reward +20.089 |   35.1s elapsed /   59
+[ 37.6%] ep    376/1000 | loss +0.3772 | reward +17.092 |   35.6s elapsed /   59
+[ 38.1%] ep    381/1000 | loss -57.5284 | reward -4.729 |   36.0s elapsed /   58
+[ 38.6%] ep    386/1000 | loss +3.6732 | reward +18.556 |   36.5s elapsed /   58
+[ 39.1%] ep    391/1000 | loss +0.3216 | reward +19.765 |   36.9s elapsed /   57
+[ 39.6%] ep    396/1000 | loss -2.1424 | reward +17.199 |   37.4s elapsed /   57
+[ 40.1%] ep    401/1000 | loss -1.6803 | reward +15.787 |   37.8s elapsed /   56
+[ 40.6%] ep    406/1000 | loss -1.6451 | reward +15.837 |   38.3s elapsed /   56
+[ 41.1%] ep    411/1000 | loss -0.0662 | reward +18.096 |   38.7s elapsed /   55
+[ 41.6%] ep    416/1000 | loss -0.4736 | reward +17.971 |   39.2s elapsed /   55
+[ 42.1%] ep    421/1000 | loss -1.9071 | reward +18.457 |   39.7s elapsed /   54
+[ 42.6%] ep    426/1000 | loss -3.2828 | reward +13.849 |   40.1s elapsed /   54
+[ 43.1%] ep    431/1000 | loss +0.8032 | reward +18.318 |   40.6s elapsed /   53
+[ 43.6%] ep    436/1000 | loss +1.3839 | reward +18.765 |   41.0s elapsed /   53
+[ 44.1%] ep    441/1000 | loss -0.8423 | reward +15.127 |   41.5s elapsed /   52
+[ 44.6%] ep    446/1000 | loss +4.7788 | reward +21.804 |   41.9s elapsed /   52
+[ 45.1%] ep    451/1000 | loss +3.0905 | reward +19.285 |   42.4s elapsed /   51
+[ 45.6%] ep    456/1000 | loss +1.9758 | reward +16.240 |   42.8s elapsed /   51
+[ 46.1%] ep    461/1000 | loss -3.3970 | reward +15.080 |   43.3s elapsed /   50
+[ 46.6%] ep    466/1000 | loss -0.2219 | reward +17.878 |   43.8s elapsed /   50
+[ 47.1%] ep    471/1000 | loss +0.3513 | reward +18.228 |   44.2s elapsed /   49
+[ 47.6%] ep    476/1000 | loss -3.6406 | reward +15.441 |   44.7s elapsed /   49
+[ 48.1%] ep    481/1000 | loss -0.4300 | reward +16.559 |   45.1s elapsed /   48
+[ 48.6%] ep    486/1000 | loss +1.6275 | reward +19.910 |   45.6s elapsed /   48
+[ 49.1%] ep    491/1000 | loss -1.7509 | reward +16.470 |   46.0s elapsed /   47
+[ 49.6%] ep    496/1000 | loss -2.0558 | reward +16.311 |   46.5s elapsed /   47
+[ 50.1%] ep    501/1000 | loss -5.7943 | reward +13.954 |   46.9s elapsed /   46
+[ 50.6%] ep    506/1000 | loss -1.7471 | reward +13.642 |   47.4s elapsed /   46
+[ 51.1%] ep    511/1000 | loss +0.5807 | reward +17.026 |   47.9s elapsed /   45
+[ 51.6%] ep    516/1000 | loss +1.8485 | reward +18.025 |   48.3s elapsed /   45
+[ 52.1%] ep    521/1000 | loss -73.7226 | reward -4.729 |   48.8s elapsed /   44
+[ 52.6%] ep    526/1000 | loss -0.5756 | reward +16.615 |   49.2s elapsed /   44
+[ 53.1%] ep    531/1000 | loss +0.7318 | reward +17.652 |   49.7s elapsed /   43
+[ 53.6%] ep    536/1000 | loss +1.7679 | reward +18.735 |   50.1s elapsed /   43
+[ 54.1%] ep    541/1000 | loss +0.7135 | reward +20.026 |   50.6s elapsed /   42
+[ 54.6%] ep    546/1000 | loss -54.8635 | reward -3.929 |   51.1s elapsed /   42
+[ 55.1%] ep    551/1000 | loss -0.7951 | reward +16.796 |   51.5s elapsed /   42
+[ 55.6%] ep    556/1000 | loss +0.0965 | reward +19.466 |   52.0s elapsed /   41
+[ 56.1%] ep    561/1000 | loss -0.3811 | reward +16.234 |   52.4s elapsed /   41
+[ 56.6%] ep    566/1000 | loss +3.3332 | reward +19.995 |   52.9s elapsed /   40
+[ 57.1%] ep    571/1000 | loss -1.7065 | reward +16.265 |   53.3s elapsed /   40
+[ 57.6%] ep    576/1000 | loss +3.5971 | reward +19.441 |   53.8s elapsed /   39
+[ 58.1%] ep    581/1000 | loss -0.2628 | reward +17.356 |   54.2s elapsed /   39
+[ 58.6%] ep    586/1000 | loss -2.5889 | reward +16.754 |   54.7s elapsed /   38
+[ 59.1%] ep    591/1000 | loss -4.3313 | reward +15.032 |   55.2s elapsed /   38
+[ 59.6%] ep    596/1000 | loss +1.1482 | reward +20.031 |   55.6s elapsed /   37
+[ 60.1%] ep    601/1000 | loss -1.5106 | reward +14.556 |   56.1s elapsed /   37
+[ 60.6%] ep    606/1000 | loss -1.3765 | reward +15.518 |   56.5s elapsed /   36
+[ 61.1%] ep    611/1000 | loss -60.4837 | reward -3.929 |   57.0s elapsed /   36
+[ 61.6%] ep    616/1000 | loss +3.1313 | reward +19.987 |   57.4s elapsed /   35
+[ 62.1%] ep    621/1000 | loss +1.7733 | reward +19.443 |   57.9s elapsed /   35
+[ 62.6%] ep    626/1000 | loss +0.8780 | reward +19.921 |   58.3s elapsed /   34
+[ 63.1%] ep    631/1000 | loss +0.6241 | reward +15.760 |   58.8s elapsed /   34
+[ 63.6%] ep    636/1000 | loss -0.6989 | reward +17.671 |   59.3s elapsed /   33
+[ 64.1%] ep    641/1000 | loss +3.9174 | reward +22.695 |   59.7s elapsed /   33
+[ 64.6%] ep    646/1000 | loss +4.3824 | reward +22.029 |   60.2s elapsed /   33
+[ 65.1%] ep    651/1000 | loss +2.9019 | reward +23.238 |   60.6s elapsed /   32
+[ 65.6%] ep    656/1000 | loss -0.0852 | reward +20.125 |   61.1s elapsed /   32
+[ 66.1%] ep    661/1000 | loss -1.6585 | reward +16.948 |   61.5s elapsed /   31
+[ 66.6%] ep    666/1000 | loss +0.9195 | reward +18.336 |   62.0s elapsed /   31
+[ 67.1%] ep    671/1000 | loss -3.0755 | reward +15.418 |   62.4s elapsed /   30
+[ 67.6%] ep    676/1000 | loss +5.4868 | reward +22.777 |   62.9s elapsed /   30
+[ 68.1%] ep    681/1000 | loss -2.4238 | reward +14.853 |   63.4s elapsed /   29
+[ 68.6%] ep    686/1000 | loss +2.1891 | reward +17.869 |   63.8s elapsed /   29
+[ 69.1%] ep    691/1000 | loss -2.2432 | reward +15.830 |   64.3s elapsed /   28
+[ 69.6%] ep    696/1000 | loss +1.5230 | reward +19.942 |   64.7s elapsed /   28
+[ 70.1%] ep    701/1000 | loss +0.3373 | reward +17.330 |   65.2s elapsed /   27
+[ 70.6%] ep    706/1000 | loss -2.7937 | reward +14.776 |   65.6s elapsed /   27
+[ 71.1%] ep    711/1000 | loss -0.6337 | reward +15.870 |   66.1s elapsed /   26
+[ 71.6%] ep    716/1000 | loss -68.2464 | reward -3.929 |   66.6s elapsed /   26
+[ 72.1%] ep    721/1000 | loss +1.6361 | reward +19.234 |   67.0s elapsed /   25
+[ 72.6%] ep    726/1000 | loss -1.6529 | reward +15.634 |   67.5s elapsed /   25
+[ 73.1%] ep    731/1000 | loss -0.7156 | reward +18.679 |   67.9s elapsed /   25
+[ 73.6%] ep    736/1000 | loss +3.9622 | reward +23.736 |   68.4s elapsed /   24
+[ 74.1%] ep    741/1000 | loss -1.9153 | reward +18.153 |   68.8s elapsed /   24
+[ 74.6%] ep    746/1000 | loss -1.5553 | reward +19.278 |   69.3s elapsed /   23
+[ 75.1%] ep    751/1000 | loss +2.0436 | reward +18.952 |   69.8s elapsed /   23
+[ 75.6%] ep    756/1000 | loss +0.0308 | reward +18.865 |   70.2s elapsed /   22
+[ 76.1%] ep    761/1000 | loss +2.6131 | reward +19.873 |   70.7s elapsed /   22
+[ 76.6%] ep    766/1000 | loss +1.6093 | reward +19.202 |   71.1s elapsed /   21
+[ 77.1%] ep    771/1000 | loss -60.9378 | reward -3.129 |   71.6s elapsed /   21
+[ 77.6%] ep    776/1000 | loss +2.4623 | reward +20.029 |   72.0s elapsed /   20
+[ 78.1%] ep    781/1000 | loss -2.3783 | reward +15.364 |   72.5s elapsed /   20
+[ 78.6%] ep    786/1000 | loss +1.1785 | reward +18.490 |   72.9s elapsed /   19
+[ 79.1%] ep    791/1000 | loss +1.9898 | reward +18.635 |   73.4s elapsed /   19
+[ 79.6%] ep    796/1000 | loss +2.3664 | reward +19.567 |   73.9s elapsed /   18
+[ 80.1%] ep    801/1000 | loss -0.6853 | reward +16.258 |   74.3s elapsed /   18
+[ 80.6%] ep    806/1000 | loss -1.7547 | reward +16.807 |   74.8s elapsed /   18
+[ 81.1%] ep    811/1000 | loss +0.9820 | reward +21.058 |   75.2s elapsed /   17
+[ 81.6%] ep    816/1000 | loss +0.5585 | reward +16.644 |   75.7s elapsed /   17
+[ 82.1%] ep    821/1000 | loss +0.5514 | reward +21.515 |   76.1s elapsed /   16
+[ 82.6%] ep    826/1000 | loss -77.4267 | reward -3.929 |   76.6s elapsed /   16
+[ 83.1%] ep    831/1000 | loss +0.3712 | reward +18.577 |   77.0s elapsed /   15
+[ 83.6%] ep    836/1000 | loss +2.3713 | reward +18.479 |   77.5s elapsed /   15
+[ 84.1%] ep    841/1000 | loss +2.5110 | reward +23.404 |   78.0s elapsed /   14
+[ 84.6%] ep    846/1000 | loss +1.3404 | reward +19.647 |   78.4s elapsed /   14
+[ 85.1%] ep    851/1000 | loss -1.8401 | reward +15.854 |   78.9s elapsed /   13
+[ 85.6%] ep    856/1000 | loss +1.0811 | reward +18.452 |   79.4s elapsed /   13
+[ 86.1%] ep    861/1000 | loss -2.1736 | reward +15.859 |   79.8s elapsed /   12
+[ 86.6%] ep    866/1000 | loss -1.3366 | reward +18.336 |   80.3s elapsed /   12
+[ 87.1%] ep    871/1000 | loss -0.1828 | reward +17.645 |   80.7s elapsed /   12
+[ 87.6%] ep    876/1000 | loss +3.2636 | reward +19.867 |   81.2s elapsed /   11
+[ 88.1%] ep    881/1000 | loss -2.2430 | reward +17.055 |   81.6s elapsed /   11
+[ 88.6%] ep    886/1000 | loss -1.3881 | reward +16.063 |   82.1s elapsed /   10
+[ 89.1%] ep    891/1000 | loss +1.7433 | reward +18.969 |   82.6s elapsed /   10
+[ 89.6%] ep    896/1000 | loss +1.0684 | reward +19.172 |   83.0s elapsed /    9
+[ 90.1%] ep    901/1000 | loss +5.6778 | reward +18.624 |   83.5s elapsed /    9
+[ 90.6%] ep    906/1000 | loss +3.6399 | reward +22.724 |   83.9s elapsed /    8
+[ 91.1%] ep    911/1000 | loss +0.6463 | reward +19.416 |   84.4s elapsed /    8
+[ 91.6%] ep    916/1000 | loss -0.7847 | reward +18.652 |   84.9s elapsed /    7
+[ 92.1%] ep    921/1000 | loss -0.6323 | reward +17.829 |   85.3s elapsed /    7
+[ 92.6%] ep    926/1000 | loss -2.5485 | reward +16.574 |   85.8s elapsed /    6
+[ 93.1%] ep    931/1000 | loss -0.1518 | reward +18.097 |   86.2s elapsed /    6
+[ 93.6%] ep    936/1000 | loss +2.1213 | reward +22.011 |   86.7s elapsed /    5
+[ 94.1%] ep    941/1000 | loss +0.0288 | reward +17.138 |   87.1s elapsed /    5
+[ 94.6%] ep    946/1000 | loss -0.3424 | reward +16.825 |   87.6s elapsed /    5
+[ 95.1%] ep    951/1000 | loss -79.2005 | reward -3.929 |   88.0s elapsed /    4
+[ 95.6%] ep    956/1000 | loss -0.8408 | reward +16.772 |   88.5s elapsed /    4
+[ 96.1%] ep    961/1000 | loss -1.8675 | reward +15.129 |   89.0s elapsed /    3
+[ 96.6%] ep    966/1000 | loss -0.2329 | reward +17.016 |   89.4s elapsed /    3
+[ 97.1%] ep    971/1000 | loss +4.1073 | reward +19.029 |   89.9s elapsed /    2
+[ 97.6%] ep    976/1000 | loss +1.1948 | reward +18.115 |   90.3s elapsed /    2
+[ 98.1%] ep    981/1000 | loss +0.6678 | reward +19.362 |   90.8s elapsed /    1
+[ 98.6%] ep    986/1000 | loss +0.3872 | reward +17.491 |   91.2s elapsed /    1
+[ 99.1%] ep    991/1000 | loss -4.1214 | reward +15.933 |   91.7s elapsed /    0
+[ 99.6%] ep    996/1000 | loss -76.3820 | reward -3.929 |   92.1s elapsed /    0
+[100.0%] ep   1000/1000 | loss -0.4064 | reward +17.078 |   92.5s elapsed /    0
+done: 1000 eps in 92.5s
+
+============================================================
+  Experiment: survey-local-32-N8
+  Method:     actor_critic
+  Agents:     8
+  Grid:       32x32
+  Episodes:   1000
+  Seeds:      5
+  Time:       93.1s
+------------------------------------------------------------
+  Final loss:   1.8100 +/- 2.8296
+  Final reward: 19.78 +/- 2.13
+------------------------------------------------------------
+  Output: experiments/survey-local-32-N8
+============================================================
+

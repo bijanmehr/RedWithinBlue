@@ -1,0 +1,11 @@
+Compromise-sweep comparison on 16x16, N=5, N_EVAL_SEEDS=20
+
+setup                         n     cov_final%   cov_std   cov_min   cov_max   ep_len
+-------------------------------------------------------------------------------------
+S  (N=1 solo blue)            1          46.0%      6.67      34.7      57.1    300.0
+B  (N=5 clean blue)           5          98.5%      2.27      89.3     100.0    200.0
+C1 (N=5: 4 blue + 1 red)      5          89.6%      3.69      83.2      95.4    200.0
+C2 (N=5: 3 blue + 2 red)      5          87.1%      7.63      65.8      94.9    200.0
+
+Wrote: experiments/compromise-compare/compromise_compare.npz
+Wrote: experiments/compromise-compare/report.png

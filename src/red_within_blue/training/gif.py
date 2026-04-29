@@ -29,6 +29,9 @@ def record_episode_gif(
     output_path: str,
     fps: int = 4,
     enforce_connectivity: bool = True,
+    joint_red_actor=None,
+    joint_red_params=None,
+    n_red: int = 0,
 ) -> Dict[str, Any]:
     """Run one episode and save an animated GIF of the agent(s) moving.
 
@@ -61,8 +64,20 @@ def record_episode_gif(
     """
     wrapper = TrajectoryWrapper(env)
 
+    # Grace supersedes the hard guardrail: if the env will terminate on
+    # disconnect, we do not force-STAY during rollout.
+    if int(getattr(env.config, "disconnect_grace", 0)) > 0:
+        enforce_connectivity = False
+
     key, reset_key = jax.random.split(key)
     obs, state = wrapper.reset(reset_key)
+
+    n_total = len(env.agents)
+    n_blue_total = n_total - n_red
+    stay_intended = np.zeros(n_total, dtype=np.int64)   # policy chose STAY
+    stay_forced = np.zeros(n_total, dtype=np.int64)     # guardrail forced STAY
+    move_taken = np.zeros(n_total, dtype=np.int64)      # action != STAY
+    steps_total = 0
 
     done = False
     while not done:
@@ -78,14 +93,35 @@ def record_episode_gif(
             comm_ranges = np.array(state.agent_state.comm_ranges)
             terrain = np.array(state.global_state.grid.terrain)
 
+        n_blue = n_blue_total
+        steps_total += 1
+
+        red_actions_precomputed = None
+        if joint_red_actor is not None and n_red > 0:
+            red_obs_flat = jnp.concatenate(
+                [obs[env.agents[n_blue + r]] for r in range(n_red)]
+            )
+            red_logits = joint_red_actor.apply(joint_red_params, red_obs_flat)
+            red_action_keys = jax.random.split(agent_keys[n_blue], n_red)
+            red_actions_precomputed = [
+                int(jax.random.categorical(red_action_keys[r], red_logits[r]))
+                for r in range(n_red)
+            ]
+
         action_dict = {}
         for i, agent in enumerate(env.agents):
-            action = int(policy_fn(agent_keys[i], obs[agent]))
+            if red_actions_precomputed is not None and i >= n_blue:
+                intended_action = red_actions_precomputed[i - n_blue]
+            else:
+                intended_action = int(policy_fn(agent_keys[i], obs[agent]))
 
+            action = intended_action
+            forced_by_guardrail = False
             if enforce_connectivity and len(env.agents) >= 2:
                 mask = _connectivity_mask(positions, comm_ranges, i, terrain)
                 if not mask[action]:
                     action = 0  # STAY
+                    forced_by_guardrail = (intended_action != 0)
                 # Commit move for sequential processing
                 deltas = np.array([[0, 0], [-1, 0], [0, 1], [1, 0], [0, -1]])
                 H, W = terrain.shape
@@ -95,6 +131,13 @@ def record_episode_gif(
                 if terrain[r, c] != 0:
                     r, c = int(positions[i, 0]), int(positions[i, 1])
                 positions[i] = [r, c]
+
+            if forced_by_guardrail:
+                stay_forced[i] += 1
+            elif action == 0:
+                stay_intended[i] += 1
+            else:
+                move_taken[i] += 1
 
             action_dict[agent] = jnp.int32(action)
 
@@ -110,13 +153,26 @@ def record_episode_gif(
     coverage_over_time: list[float] = []
     visit_heatmap = None
 
-    from red_within_blue.types import CELL_WALL
+    from red_within_blue.types import CELL_WALL, MAP_UNKNOWN
+    from red_within_blue.visualizer import _merge_team_belief
+
+    blue_ever_known: Optional[np.ndarray] = None
 
     for snapshot in trajectory:
         if "state" not in snapshot:
             continue
         st = snapshot["state"]
-        rgb = render_dashboard_frame(st, env.config)
+
+        local_maps_np = np.asarray(st.agent_state.local_map)
+        team_ids_np = np.asarray(st.agent_state.team_ids)
+        blue_belief_now = _merge_team_belief(local_maps_np, team_ids_np, target_team=0)
+        known_now = (blue_belief_now != MAP_UNKNOWN)
+        if blue_ever_known is None:
+            blue_ever_known = known_now.copy()
+        else:
+            blue_ever_known = blue_ever_known | known_now
+
+        rgb = render_dashboard_frame(st, env.config, blue_ever_known=blue_ever_known)
         frames.append(Image.fromarray(rgb))
 
         # Track connectivity
@@ -154,4 +210,12 @@ def record_episode_gif(
         "visit_heatmap": visit_heatmap,
         "connectivity": connectivity,
         "coverage_over_time": coverage_over_time,
+        "stay_intended": stay_intended.tolist(),
+        "stay_forced": stay_forced.tolist(),
+        "move_taken": move_taken.tolist(),
+        "steps_total": int(steps_total),
+        "blue_ever_known_pct": (
+            float(blue_ever_known.sum()) / float(blue_ever_known.size) * 100.0
+            if blue_ever_known is not None else 0.0
+        ),
     }

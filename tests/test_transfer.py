@@ -13,7 +13,7 @@ from red_within_blue.training.transfer import (
 )
 
 RNG = jax.random.PRNGKey(42)
-OBS_DIM = 255
+OBS_DIM = 376
 NUM_ACTIONS = 5
 
 

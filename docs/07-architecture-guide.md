@@ -106,6 +106,30 @@ flat = load_checkpoint("experiments/stage1/checkpoint.npz")
 actor_params = unflatten_params(flat, reference_params)
 ```
 
+### Warm-starting a run from a prior checkpoint
+
+`runner.py:load_warm_start_params` re-hydrates actor + critic params from a source checkpoint and — crucially — handles grid-size changes by spatially upsampling the first-layer kernel. This is what makes the `8×8 → 16×16 → 32×32` ladder work: one set of weights, reshaped to fit progressively larger observation spaces.
+
+**Shape of the problem.** Agents observe `obs = scan(S) | grid_seen_mask(H·W) | tail(5)`. Only the `grid_seen_mask` block depends on grid shape — `scan` and `tail` are grid-invariant scalars. Every Dense layer past `Dense_0` operates on `[hidden, hidden]`, also grid-invariant. So the only kernel that needs transforming is `Dense_0`'s input axis.
+
+**Actor (`num_blocks=1`).** `_upsample_first_layer_for_grid` splits `Dense_0/kernel` along its input axis into `scan | grid | tail` rows, reshapes the grid slice `[H·W, hidden] → [H, W, hidden]`, does a **nearest-neighbor** spatial upsample to `[H', W', hidden]`, flattens back, and re-concatenates. Bias and deeper layers copy verbatim. Seed axis `[S, ...]` is preserved.
+
+**Central critic (`num_blocks=N`).** The CTDE critic ingests `joint_obs = observations.reshape(T, -1)` — N concatenated copies of the per-agent obs. Its `Dense_0/kernel` therefore has input shape `[N × per_block_obs_dim, hidden]`. The loader splits that axis into N per-agent blocks, upsamples each block's grid rows exactly like the actor, then concatenates the blocks back. Critic transfer requires `critic_hidden_dim` and `critic_num_layers` to match between source and target. If they don't, the loader logs a warning and falls back to re-init rather than raising.
+
+**Mismatched agent counts (`source_num_blocks ≠ num_blocks`).** Adding agents at fixed grid is supported when the target N is an integer multiple of the source N (e.g. `4 → 8`). Set `warm_start_source_num_agents` in the target YAML; the loader splits the source kernel into `source_num_blocks` per-agent blocks, upsamples each one, and **tiles** the upsampled set `tile_factor = num_blocks // source_num_blocks` times along the input axis. This is principled because the central critic is symmetric in agent identity — the per-agent slot weights *should* be identical for every slot under random initialisation, so duplicating the source's slot weights to fill new slots is the minimum-assumption initialisation. Non-integer ratios are rejected (you can't tile a 4-block kernel into a 6-slot critic without ambiguity); the loader skips the critic transfer in that case.
+
+**Lessons baked in (see `experiments/README.md` for the receipts):**
+
+1. **Actor-only warm-start is a trap for CTDE runs.** Re-initialising the critic produces increasingly wrong regression targets on the new joint-obs scale and drags the policy into a low-entropy corner — the reward trajectory looks strong for ~500 eps, then collapses monotonically as the critic diverges. Always transfer both.
+
+2. **Off a converged warm-start, fine-tune gently.** The source's from-scratch LR is the wrong LR for an already-good starting point. Start with `lr ~5× smaller` and `num_episodes ~4× shorter` than the source used; the fine-tune's job is adaptation, not re-learning. Going hot overwrites the transferred policy.
+
+3. **For N-mismatched transfer, the bar is even higher.** The tiled critic injects more initial value-prediction noise than a same-N transfer (every per-agent slot starts identical, which is the right prior but not the truth on any specific trajectory). Even the gentle recipe that works for same-N rungs can overshoot. Gauge the warm-start with the diagnostic first; if it's already strong, *skip the fine-tune* and save the warm-start as the canonical checkpoint.
+
+4. **Always run the pre-training diagnostic first.** `/tmp/eval_pretraining_warmstart.py <config.yaml>` evaluates the raw upsampled weights on the target grid with zero gradient steps. It pins any later collapse to *mechanism* vs *training recipe* in under 2 minutes — and at the same time tells you whether training is even worth attempting.
+
+See `experiments/README.md` for the worked examples and concrete numbers from the `8 → 16 → 32` ladder (same-N) and the `quad-32 → octa-32-r6` rung (N-mismatched).
+
 ---
 
 ## 4. Configuration System
@@ -220,3 +244,36 @@ Test categories:
 | Networks   | `test_networks.py`, `test_dqn.py`             | Forward pass shapes, init, Q-learning                 |
 | Analysis   | `test_metrics.py`, `test_stats.py`, `test_transfer.py` | Coverage, statistical tests, CKA                |
 | Viz        | `test_plotting.py`, `test_gif.py`, `test_visualizer.py` | Rendering, GIF output                          |
+
+---
+
+## 8. Live Architecture Dump (auto-generated)
+
+Re-run `python scripts/architecture_dump.py` after editing
+`src/red_within_blue/training/networks.py` or the `network.*` / `train.red_*`
+fields in a config YAML. The script re-renders the tables below by calling
+`flax.linen.nn.tabulate(...)` on the live modules — shapes, FLOPs, and
+parameter counts never drift from the code.
+
+The numbers below are taken from `configs/compromise-16x16-5-3b2r.yaml`
+(`obs_dim = 23`, `num_actions = 5`, `num_red = 2`) — the setup that drives
+the compromise-sweep meta-report.
+
+Full rendered output: [`experiments/meta-report/architecture.txt`](../experiments/meta-report/architecture.txt).
+A live HTML copy is embedded in **Appendix A** of
+[`experiments/meta-report/meta_report.html`](../experiments/meta-report/meta_report.html).
+
+**Parameter budget (C2 setup):**
+
+| network          | params | bytes (fp32) | FLOPs / forward |
+|------------------|-------:|-------------:|----------------:|
+| `Actor`          | 20,229 | 80.9 kB      | 40,453          |
+| `Critic`         | 19,713 | 78.9 kB      | 39,425          |
+| `JointRedActor`  | 23,818 | 95.3 kB      | 47,626          |
+| **Total live**   | **63,760** | **≈ 255 kB** | **127,504**   |
+
+All three networks are 2×128 ReLU MLPs with a single final `Dense`. The
+joint-red actor scales its input (`n_red · obs_dim`) and output
+(`n_red · num_actions`) with team size — everything else is identical. Live
+weights fit in CPU L2 cache; training throughput is rollout-bound, not
+gradient-bound.

@@ -1,0 +1,17 @@
+{
+  "B": {
+    "peak_fogged_cells": 0,
+    "area_under_fog_cellsteps": 0.0,
+    "final_fogged_cells": 0
+  },
+  "C1": {
+    "peak_fogged_cells": 2,
+    "area_under_fog_cellsteps": 166.0,
+    "final_fogged_cells": 0
+  },
+  "C2": {
+    "peak_fogged_cells": 3,
+    "area_under_fog_cellsteps": 215.0,
+    "final_fogged_cells": 2
+  }
+}

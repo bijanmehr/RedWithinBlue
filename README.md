@@ -75,10 +75,10 @@ Configs that require warm-start include a `warm_start:` field pointing to the so
 
 | Sweep | Configs | What it isolates |
 |:------|:--------|:-----------------|
-| **Policy gradient method** | `method-reinforce`, `method-baseline`, `method-actor-critic` | REINFORCE vs. mean-return baseline vs. actor-critic (TD advantage with learned value function) |
-| **Discount factor (gamma)** | `gamma-085`, `gamma-090`, `gamma-095`, `gamma-099` | Temporal credit assignment horizon — how far ahead the agent looks when discounting future rewards |
-| **Learning rate** | `lr-1e4`, `lr-3e4`, `lr-5e4`, `lr-1e3` | Optimizer step size for Adam; too high causes policy oscillation, too low slows convergence |
-| **Network capacity** | `net-64x2`, `net-128x2`, `net-128x3`, `net-256x2` | Hidden dimension and depth of actor/critic MLPs — tradeoff between expressiveness and training stability |
+| **Policy gradient method** | `configs/hyperparameter_search/method-*.yaml` | REINFORCE vs. mean-return baseline vs. actor-critic (TD advantage with learned value function) |
+| **Discount factor (gamma)** | `configs/hyperparameter_search/gamma-*.yaml` | Temporal credit assignment horizon — how far ahead the agent looks when discounting future rewards |
+| **Learning rate** | `configs/hyperparameter_search/lr-*.yaml` | Optimizer step size for Adam; too high causes policy oscillation, too low slows convergence |
+| **Network capacity** | `configs/hyperparameter_search/net-*.yaml` | Hidden dimension and depth of actor/critic MLPs — tradeoff between expressiveness and training stability |
 
 **Stage 2 — Multi-agent & generalization** (warm-start from `solo-explore` checkpoint):
 
@@ -91,12 +91,15 @@ Configs that require warm-start include a `warm_start:` field pointing to the so
 All sweep configs use 1000 episodes, 5 seeds, and vary one dimension at a time against the best known baseline (actor-critic, 128x2 MLP, lr=3e-4, gamma=0.90).
 
 ```bash
-# Run everything (two-stage: solo first, then warm-start)
-./run_all_sweeps.sh
+# Hyperparameter search (lr / gamma / net / method) — all configs in the folder
+./configs/hyperparameter_search/run_search.sh
 
-# Run a specific category
-./run_all_sweeps.sh configs/sweeps/lr-*.yaml
-./run_all_sweeps.sh configs/sweeps/multi-*.yaml
+# Run a specific subset
+./configs/hyperparameter_search/run_search.sh configs/hyperparameter_search/lr-*.yaml
+
+# Single experiment stages (adversarial, multi-agent, grid) — see experiments/README.md
+python -m red_within_blue.training.runner --config configs/sweeps/multi-4agent-18x18.yaml \
+    --warm-start experiments/solo-explore/checkpoint.npz
 ```
 
 ### Use the Environment Directly

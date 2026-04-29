@@ -19,7 +19,10 @@ from matplotlib.collections import LineCollection
 if TYPE_CHECKING:
     from red_within_blue.types import EnvConfig, EnvState
 
-from red_within_blue.types import CELL_WALL, CELL_OBSTACLE
+from red_within_blue.types import (
+    CELL_WALL, CELL_OBSTACLE,
+    MAP_UNKNOWN, MAP_FREE, MAP_WALL, MAP_OBSTACLE,
+)
 
 # ---------------------------------------------------------------------------
 # Colour constants
@@ -72,6 +75,46 @@ def _cell_colour_map(terrain: np.ndarray, explored: np.ndarray,
     grey = 0.92 - 0.67 * frac
     img[visited_mask] = grey[:, None]  # broadcast to RGB
 
+    return img
+
+
+_BELIEF_COLOURS = {
+    MAP_UNKNOWN: np.array([0.10, 0.10, 0.10]),   # near-black "fog"
+    MAP_FREE:    np.array([0.92, 0.92, 0.92]),   # light grey known floor
+    MAP_WALL:    np.array([0.30, 0.30, 0.30]),   # dark grey known wall
+    MAP_OBSTACLE:np.array([0.55, 0.55, 0.55]),   # mid grey known obstacle
+}
+
+
+def _merge_team_belief(local_maps: np.ndarray, team_ids: np.ndarray,
+                       target_team: int) -> np.ndarray:
+    """Element-wise team belief merge: a cell is known if any team member knows it.
+
+    Red→blue fogging writes ``MAP_UNKNOWN`` into blue receivers' local_maps —
+    if every blue agent who held that cell got fogged, the merged belief is
+    UNKNOWN. Conflicts between known values cannot occur because every truthful
+    write carries the same terrain code.
+    """
+    members = np.where(team_ids == target_team)[0]
+    if members.size == 0:
+        return np.full(local_maps.shape[1:], MAP_UNKNOWN, dtype=np.int32)
+    team_maps = local_maps[members]                            # [K, H, W]
+    known_mask = team_maps != MAP_UNKNOWN                      # [K, H, W]
+    any_known = known_mask.any(axis=0)                         # [H, W]
+    # For each cell, take the first known value (any team member's truth).
+    first_known_idx = np.argmax(known_mask, axis=0)            # [H, W]
+    H, W = any_known.shape
+    rr, cc = np.indices((H, W))
+    picked = team_maps[first_known_idx, rr, cc]                # [H, W]
+    return np.where(any_known, picked, MAP_UNKNOWN).astype(np.int32)
+
+
+def _belief_colour_map(belief: np.ndarray) -> np.ndarray:
+    """Render a [H, W] team-belief map as an [H, W, 3] RGB float image."""
+    H, W = belief.shape
+    img = np.tile(_BELIEF_COLOURS[MAP_UNKNOWN], (H, W, 1))
+    for code, colour in _BELIEF_COLOURS.items():
+        img[belief == code] = colour
     return img
 
 
@@ -162,7 +205,11 @@ def render_frame(state: "EnvState", config: "EnvConfig") -> np.ndarray:
 # render_dashboard_frame  (pure function — grid + metrics panel)
 # ---------------------------------------------------------------------------
 
-def render_dashboard_frame(state: "EnvState", config: "EnvConfig") -> np.ndarray:
+def render_dashboard_frame(
+    state: "EnvState",
+    config: "EnvConfig",
+    blue_ever_known: "np.ndarray | None" = None,
+) -> np.ndarray:
     """Render the current state as a dashboard: grid (left) + metrics (right).
 
     Same layout as ``EnvDashboard.update`` but as a pure function that returns
@@ -174,11 +221,11 @@ def render_dashboard_frame(state: "EnvState", config: "EnvConfig") -> np.ndarray
         The current environment state.
     config : EnvConfig
         The environment configuration.
-
-    Returns
-    -------
-    np.ndarray
-        RGB image with shape ``(H_px, W_px, 3)`` and dtype ``uint8``.
+    blue_ever_known : np.ndarray, optional
+        Boolean [H, W] mask of cells the blue team has *ever* known across the
+        episode so far. When provided, cells in this mask that are *currently*
+        UNKNOWN in the blue merged belief get a translucent red overlay — this
+        is the visible "fog footprint" of red's adversarial messages.
     """
     H = int(config.grid_height)
     W = int(config.grid_width)
@@ -189,59 +236,95 @@ def render_dashboard_frame(state: "EnvState", config: "EnvConfig") -> np.ndarray
     team_ids = np.asarray(state.agent_state.team_ids)    # [N]
     adjacency = np.asarray(state.global_state.graph.adjacency)  # [N, N]
     degree = np.asarray(state.global_state.graph.degree)
+    local_maps = np.asarray(state.agent_state.local_map)  # [N, H, W]
     step = int(state.global_state.step)
     is_connected = bool(state.global_state.graph.is_connected)
     num_components = int(state.global_state.graph.num_components)
     N = positions.shape[0]
 
-    # --- figure setup: grid | colorbar | metrics ---
+    blue_belief = _merge_team_belief(local_maps, team_ids, target_team=0)
+    red_belief = _merge_team_belief(local_maps, team_ids, target_team=1)
+
+    # --- figure setup: global | blue belief | red belief | colorbar | metrics ---
     dpi = 100
     max_steps = int(config.max_steps)
 
-    fig = plt.figure(figsize=(13, 6), dpi=dpi)
-    gs = fig.add_gridspec(1, 3, width_ratios=[2, 0.08, 1], wspace=0.05)
-    ax_grid = fig.add_subplot(gs[0])
-    ax_cbar = fig.add_subplot(gs[1])
-    ax_metrics = fig.add_subplot(gs[2])
+    fig = plt.figure(figsize=(20, 6), dpi=dpi)
+    gs = fig.add_gridspec(1, 5, width_ratios=[2, 2, 2, 0.08, 1.4], wspace=0.08)
+    ax_global = fig.add_subplot(gs[0])
+    ax_blue = fig.add_subplot(gs[1])
+    ax_red = fig.add_subplot(gs[2])
+    ax_cbar = fig.add_subplot(gs[3])
+    ax_metrics = fig.add_subplot(gs[4])
 
     fig.suptitle("RedWithinBlue", fontsize=12, fontweight="bold")
 
-    # --- Grid panel ---
-    ax_grid.set_xlim(-0.5, W - 0.5)
-    ax_grid.set_ylim(H - 0.5, -0.5)
-    ax_grid.set_aspect("equal")
-    ax_grid.set_title("Grid")
-    ax_grid.axis("off")
+    global_img = _cell_colour_map(terrain, explored, max_steps)
+    blue_img = _belief_colour_map(blue_belief)
+    red_img = _belief_colour_map(red_belief)
 
-    cell_img = _cell_colour_map(terrain, explored, max_steps)
-    ax_grid.imshow(cell_img, origin="upper", extent=(-0.5, W - 0.5, H - 0.5, -0.5))
+    # --- Fog footprint overlay on blue panel ---
+    # Cells the blue team once knew but currently sees as UNKNOWN are exactly
+    # the cells red has fogged via msgs (red->blue carries MAP_UNKNOWN). Tint
+    # them with translucent red so the adversarial effect is visible.
+    fogged_blue = None
+    if blue_ever_known is not None:
+        non_wall = (terrain != CELL_WALL)
+        fogged_blue = (
+            blue_ever_known.astype(bool)
+            & (blue_belief == MAP_UNKNOWN)
+            & non_wall
+        )
+        if fogged_blue.any():
+            tint = np.array([0.80, 0.20, 0.20])  # adversarial red
+            alpha = 0.55
+            blue_img[fogged_blue] = (
+                (1.0 - alpha) * blue_img[fogged_blue] + alpha * tint
+            )
 
-    # Grid lines
-    for x in range(W + 1):
-        ax_grid.axvline(x - 0.5, color=_GRID_LINE_COLOUR, linewidth=_GRID_LINE_WIDTH, zorder=1)
-    for y in range(H + 1):
-        ax_grid.axhline(y - 0.5, color=_GRID_LINE_COLOUR, linewidth=_GRID_LINE_WIDTH, zorder=1)
+    blue_title = "Blue belief (merged blue local_maps)"
+    if fogged_blue is not None and fogged_blue.any():
+        blue_title += f"  |  fogged: {int(fogged_blue.sum())}"
 
-    # Communication links
-    segments = []
-    for i in range(N):
-        for j in range(i + 1, N):
-            if adjacency[i, j]:
-                p1 = (float(positions[i, 1]), float(positions[i, 0]))
-                p2 = (float(positions[j, 1]), float(positions[j, 0]))
-                segments.append([p1, p2])
-    if segments:
-        lc = LineCollection(segments, colors=_LINK_COLOUR, linewidths=_LINK_LINEWIDTH, zorder=2)
-        ax_grid.add_collection(lc)
+    panels = [
+        (ax_global, global_img, "Global (ground truth + visit heatmap)"),
+        (ax_blue,   blue_img,   blue_title),
+        (ax_red,    red_img,    "Red belief (red local_map)"),
+    ]
+    for ax, img, title in panels:
+        ax.set_xlim(-0.5, W - 0.5)
+        ax.set_ylim(H - 0.5, -0.5)
+        ax.set_aspect("equal")
+        ax.set_title(title, fontsize=9)
+        ax.axis("off")
+        ax.imshow(img, origin="upper", extent=(-0.5, W - 0.5, H - 0.5, -0.5))
 
-    # Agents
-    for i in range(N):
-        row, col = float(positions[i, 0]), float(positions[i, 1])
-        tid = int(team_ids[i])
-        colour = _TEAM_COLOURS.get(tid, _DEFAULT_AGENT_COLOUR)
-        circle = Circle((col, row), 0.35, facecolor=colour, edgecolor="black",
-                         linewidth=1.0, zorder=3)
-        ax_grid.add_patch(circle)
+        for x in range(W + 1):
+            ax.axvline(x - 0.5, color=_GRID_LINE_COLOUR,
+                       linewidth=_GRID_LINE_WIDTH, zorder=1)
+        for y in range(H + 1):
+            ax.axhline(y - 0.5, color=_GRID_LINE_COLOUR,
+                       linewidth=_GRID_LINE_WIDTH, zorder=1)
+
+        segments = []
+        for i in range(N):
+            for j in range(i + 1, N):
+                if adjacency[i, j]:
+                    p1 = (float(positions[i, 1]), float(positions[i, 0]))
+                    p2 = (float(positions[j, 1]), float(positions[j, 0]))
+                    segments.append([p1, p2])
+        if segments:
+            lc = LineCollection(segments, colors=_LINK_COLOUR,
+                                linewidths=_LINK_LINEWIDTH, zorder=2)
+            ax.add_collection(lc)
+
+        for i in range(N):
+            row, col = float(positions[i, 0]), float(positions[i, 1])
+            tid = int(team_ids[i])
+            colour = _TEAM_COLOURS.get(tid, _DEFAULT_AGENT_COLOUR)
+            circle = Circle((col, row), 0.35, facecolor=colour,
+                            edgecolor="black", linewidth=1.0, zorder=3)
+            ax.add_patch(circle)
 
     # --- Visit-count colorbar ---
     # Build a vertical gradient matching _cell_colour_map mapping:
@@ -273,9 +356,24 @@ def render_dashboard_frame(state: "EnvState", config: "EnvConfig") -> np.ndarray
     explored_non_wall = int(((explored > 0) & non_wall_mask).sum())
     coverage_pct = (explored_non_wall / total_non_wall * 100) if total_non_wall > 0 else 0.0
 
+    blue_known = int(((blue_belief != MAP_UNKNOWN) & non_wall_mask).sum())
+    red_known = int(((red_belief != MAP_UNKNOWN) & non_wall_mask).sum())
+    blue_known_pct = blue_known / total_non_wall * 100 if total_non_wall > 0 else 0.0
+    red_known_pct = red_known / total_non_wall * 100 if total_non_wall > 0 else 0.0
+
     lines = []
     lines.append(f"Step: {step} / {max_steps}")
     lines.append(f"Coverage: {coverage_pct:.1f}%")
+    lines.append(f"Blue known: {blue_known_pct:.1f}%")
+    lines.append(f"Red  known: {red_known_pct:.1f}%")
+    if blue_ever_known is not None:
+        ever_pct = (
+            int((blue_ever_known.astype(bool) & non_wall_mask).sum())
+            / total_non_wall * 100
+        ) if total_non_wall > 0 else 0.0
+        fog_n = int(fogged_blue.sum()) if fogged_blue is not None else 0
+        lines.append(f"Blue ever-known: {ever_pct:.1f}%")
+        lines.append(f"Fogged-now cells: {fog_n}")
     if is_connected:
         lines.append("Graph: Connected")
     else:

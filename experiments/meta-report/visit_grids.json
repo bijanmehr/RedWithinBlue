@@ -1,0 +1,50 @@
+{
+  "B": {
+    "n_blue": 5,
+    "n_red": 0,
+    "blue_visits_total": 85546,
+    "red_visits_total": 0,
+    "blue_visits_max_cell": 1052,
+    "red_visits_max_cell": 0,
+    "blue_per_agent_mean_per_cell": 87.29183197021484,
+    "red_per_agent_mean_per_cell": 0.0,
+    "blue_per_agent_max_cell": 210.39999389648438,
+    "red_per_agent_max_cell": 0.0,
+    "delta_blue_vs_B_abandoned_pct": 0.0,
+    "delta_blue_vs_B_crowded_pct": 0.0,
+    "delta_blue_vs_B_mean_in_red_hotspots": 0.0,
+    "delta_blue_vs_B_mean_abs": 0.0
+  },
+  "C1": {
+    "n_blue": 4,
+    "n_red": 1,
+    "blue_visits_total": 62169,
+    "red_visits_total": 13081,
+    "blue_visits_max_cell": 1380,
+    "red_visits_max_cell": 660,
+    "blue_per_agent_mean_per_cell": 79.29719543457031,
+    "red_per_agent_mean_per_cell": 66.73979949951172,
+    "blue_per_agent_max_cell": 345.0,
+    "red_per_agent_max_cell": 660.0,
+    "delta_blue_vs_B_abandoned_pct": 21.428571428571427,
+    "delta_blue_vs_B_crowded_pct": 11.224489795918368,
+    "delta_blue_vs_B_mean_in_red_hotspots": 27.616668701171875,
+    "delta_blue_vs_B_mean_abs": 43.550254821777344
+  },
+  "C2": {
+    "n_blue": 3,
+    "n_red": 2,
+    "blue_visits_total": 44947,
+    "red_visits_total": 18509,
+    "blue_visits_max_cell": 1188,
+    "red_visits_max_cell": 1830,
+    "blue_per_agent_mean_per_cell": 76.44048309326172,
+    "red_per_agent_mean_per_cell": 47.216835021972656,
+    "blue_per_agent_max_cell": 396.0,
+    "red_per_agent_max_cell": 915.0,
+    "delta_blue_vs_B_abandoned_pct": 33.16326530612245,
+    "delta_blue_vs_B_crowded_pct": 12.755102040816327,
+    "delta_blue_vs_B_mean_in_red_hotspots": -0.6166672706604004,
+    "delta_blue_vs_B_mean_abs": 57.92687225341797
+  }
+}

@@ -1,0 +1,26 @@
+Aggregate: B=98.55%  C1=89.57%  C2=87.12%
+
+=== Evaluating B: B  — N=5 clean (5 blue, 0 red) ===
+  episode ran 200 steps (n_blue=5, n_red=0, final cov=100.0%)
+  copied gif → experiments/meta-report/episode_B.gif
+
+=== Evaluating C1: C1 — N=5: 4 blue + 1 red (m=1) ===
+  episode ran 200 steps (n_blue=4, n_red=1, final cov=94.4%)
+  copied gif → experiments/meta-report/episode_C1.gif
+
+=== Evaluating C2: C2 — N=5: 3 blue + 2 red (m=2) ===
+  episode ran 200 steps (n_blue=3, n_red=2, final cov=89.8%)
+  copied gif → experiments/meta-report/episode_C2.gif
+
+=== Rendering cross-setup figures ===
+  wrote experiments/meta-report/comparison_matrix.png
+  wrote experiments/meta-report/trajectories.png
+  wrote experiments/meta-report/fog_footprint.png
+  wrote experiments/meta-report/coverage_curves.png
+  wrote experiments/meta-report/claims_evidence.png
+  wrote experiments/meta-report/budget_heatmap.png
+  wrote experiments/meta-report/budget_curves.png
+  wrote experiments/meta-report/budget_surface.png
+  copied aggregate → experiments/meta-report/compromise_compare.png
+
+Wrote experiments/meta-report/meta_report.html

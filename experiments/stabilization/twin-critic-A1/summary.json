@@ -1,0 +1,18 @@
+{
+  "variant": "A1",
+  "config": "configs/pair-cooperate-coop.yaml",
+  "num_episodes": 15000,
+  "num_seeds": 5,
+  "final_reward_mean": 0.3929123282432556,
+  "final_reward_std": 0.023837491869926453,
+  "final_reward_per_seed": [
+    0.38775578141212463,
+    0.389365017414093,
+    0.37842756509780884,
+    0.37488341331481934,
+    0.4341298043727875
+  ],
+  "late_dive_count": 4,
+  "loss_abs_p99_final": 2893.8439819335726,
+  "wall_time_s": 615.8
+}

@@ -86,7 +86,7 @@ class TestDqnLoss:
     def test_returns_finite_scalar(self):
         """dqn_loss should return a finite scalar for a valid batch."""
         batch_size = 8
-        obs_dim = 255
+        obs_dim = 376
         num_actions = 5
 
         model = QNetwork(num_actions=num_actions, hidden_dim=64)

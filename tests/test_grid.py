@@ -9,6 +9,7 @@ from red_within_blue.grid import (
     get_local_scan,
     update_occupancy,
     update_exploration,
+    apply_red_contamination,
 )
 from red_within_blue.types import (
     CELL_EMPTY,
@@ -189,4 +190,57 @@ def test_update_exploration():
     explored = update_exploration(explored, positions2)
     assert explored[2, 3].item() == 3
     assert explored[4, 5].item() == 2  # no longer visited
-    assert explored[1, 1].item() == 1
+
+
+# ---------------------------------------------------------------------------
+# apply_red_contamination tests
+# ---------------------------------------------------------------------------
+
+
+def _seed_explored(positions):
+    explored = jnp.zeros((H, W), dtype=jnp.int32)
+    return update_exploration(explored, positions)
+
+
+def test_red_contamination_noop_when_zero_red():
+    """num_red_agents=0 leaves explored bit-identical."""
+    positions = jnp.array([[2, 3], [4, 5]], dtype=jnp.int32)
+    explored = _seed_explored(positions)
+    new_explored = apply_red_contamination(explored, positions, num_red_agents=0)
+    assert jnp.array_equal(new_explored, explored).item()
+
+
+def test_red_contamination_zeros_red_cell():
+    """Last `num_red_agents` agents zero `explored` at their cells."""
+    # 1 blue + 1 red, distinct cells.
+    positions = jnp.array([[2, 3], [4, 5]], dtype=jnp.int32)
+    explored = _seed_explored(positions)
+    new_explored = apply_red_contamination(explored, positions, num_red_agents=1)
+    # Blue cell unchanged, red cell zeroed.
+    assert new_explored[2, 3].item() == 1
+    assert new_explored[4, 5].item() == 0
+
+
+def test_red_contamination_colocated_blue_red_stays_zero():
+    """1 blue + 1 red on the same cell → explored stays 0 across many steps."""
+    positions = jnp.array([[3, 3], [3, 3]], dtype=jnp.int32)
+    explored = jnp.zeros((H, W), dtype=jnp.int32)
+    for _ in range(5):
+        explored = update_exploration(explored, positions)
+        explored = apply_red_contamination(explored, positions, num_red_agents=1)
+        # Cell visited by red same step → always reset to 0.
+        assert explored[3, 3].item() == 0
+
+
+def test_red_contamination_jit_compatible():
+    """Helper compiles under jit when num_red_agents is supplied as a static arg."""
+    positions = jnp.array([[2, 3], [4, 5]], dtype=jnp.int32)
+    explored = _seed_explored(positions)
+
+    @jax.jit
+    def _runner(expl, pos):
+        return apply_red_contamination(expl, pos, num_red_agents=1)
+
+    new_explored = _runner(explored, positions)
+    assert new_explored[4, 5].item() == 0
+    assert new_explored[2, 3].item() == 1

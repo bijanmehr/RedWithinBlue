@@ -44,7 +44,6 @@ class TestDefaults:
         assert cfg.env.max_steps == 100
         assert cfg.env.comm_radius == 3.0
         assert cfg.env.obs_radius == 1
-        assert cfg.env.msg_dim == 8
         assert cfg.env.num_actions == 5
         assert cfg.env.node_feature_dim == 5
 
@@ -94,20 +93,19 @@ class TestObsDim:
 
     def test_default_obs_dim(self):
         cfg = ExperimentConfig()
-        # obs_radius=1 -> scan_dim = 3*3 = 9
-        # total_msg = 9 + 8 = 17
-        # obs_dim = 9 + 1 + 17 + 2 + 1 + 1 = 31
-        assert cfg.obs_dim == 31
+        # Default grid 10x10, obs_radius=1 -> scan_dim = 9, grid_dim = 100
+        # obs_dim = scan + seen_mask(H*W) + map_fraction + pos + uid + team
+        #         = 9   + 100            + 1            + 2   + 1   + 1   = 114
+        assert cfg.obs_dim == 114
 
     def test_custom_obs_dim(self):
-        """obs_dim with non-default obs_radius and msg_dim."""
+        """obs_dim with non-default obs_radius."""
         cfg = ExperimentConfig(
-            env=EnvParams(obs_radius=2, msg_dim=16),
+            env=EnvParams(obs_radius=2),
         )
-        # obs_radius=2 -> scan_dim = 5*5 = 25
-        # total_msg = 25 + 16 = 41
-        # obs_dim = 25 + 1 + 41 + 2 + 1 + 1 = 71
-        assert cfg.obs_dim == 71
+        # Default grid 10x10, obs_radius=2 -> scan_dim = 25, grid_dim = 100
+        # obs_dim = 25 + 100 + 1 + 2 + 1 + 1 = 130
+        assert cfg.obs_dim == 130
 
 
 # ------------------------------------------------------------------
@@ -133,7 +131,6 @@ class TestToEnvConfig:
                 max_steps=256,
                 comm_radius=5.0,
                 obs_radius=1,
-                msg_dim=8,
                 num_actions=5,
                 node_feature_dim=5,
             ),
@@ -146,7 +143,6 @@ class TestToEnvConfig:
         assert env_cfg.max_steps == 256
         assert env_cfg.comm_radius == 5.0
         assert env_cfg.obs_radius == 1
-        assert env_cfg.msg_dim == 8
         assert env_cfg.num_actions == 5
         assert env_cfg.node_feature_dim == 5
 
@@ -159,7 +155,6 @@ class TestToEnvConfig:
         assert env_cfg.max_steps == cfg.env.max_steps
         assert env_cfg.comm_radius == cfg.env.comm_radius
         assert env_cfg.obs_radius == cfg.env.obs_radius
-        assert env_cfg.msg_dim == cfg.env.msg_dim
         assert env_cfg.wall_density == cfg.env.wall_density
         assert env_cfg.node_feature_dim == cfg.env.node_feature_dim
 
@@ -226,7 +221,6 @@ env:
   max_steps: 512
   comm_radius: 7.0
   obs_radius: 2
-  msg_dim: 16
   num_actions: 4
   node_feature_dim: 10
 network:
@@ -284,7 +278,9 @@ class TestFromLegacyConfig:
             cfg = from_legacy_config(path)
             assert cfg.env.grid_width == 10
             assert cfg.env.num_agents == 1
-            assert cfg.obs_dim == 31
+            # 10x10 grid, obs_radius=1
+            # 9 (scan) + 100 (seen_mask) + 1 (frac) + 2 (pos) + 1 (uid) + 1 (team) = 114
+            assert cfg.obs_dim == 114
         finally:
             os.unlink(path)
 
@@ -311,10 +307,20 @@ class TestGetStageConfigs:
         assert s3.env.max_steps == 256
         assert s3.env.comm_radius == 5.0
 
-    def test_obs_dim_consistent(self):
-        """All stages share the same obs_dim (needed for weight transfer)."""
+    def test_obs_dim_per_stage(self):
+        """Each stage's obs_dim reflects its grid size (seen-mask is grid-dependent).
+
+        Stage 1 & 2 are 10x10 -> 114; stage 3 is 18x18 -> 338.
+        Cross-stage weight transfer is therefore not obs-shape-compatible for the
+        encoder layer; warm-start copies the shared trunk/policy but the input
+        projection must be re-initialised when the grid size changes.
+        """
         s1, s2, s3 = get_stage_configs()
-        assert s1.obs_dim == s2.obs_dim == s3.obs_dim == 31
+        # 10x10 grid: 9 + 100 + 1 + 2 + 1 + 1 = 114
+        assert s1.obs_dim == 114
+        assert s2.obs_dim == 114
+        # 18x18 grid: 9 + 324 + 1 + 2 + 1 + 1 = 338
+        assert s3.obs_dim == 338
 
     def test_experiment_names(self):
         s1, s2, s3 = get_stage_configs()

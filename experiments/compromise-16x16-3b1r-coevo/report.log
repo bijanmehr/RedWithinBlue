@@ -1,0 +1,7 @@
+[gif] STAY breakdown over 200 steps:
+  agent_0: stay_intended=0 (0%)  stay_forced=111 (56%)  moved=89 (44%)
+  agent_1: stay_intended=0 (0%)  stay_forced=119 (60%)  moved=81 (40%)
+  agent_2: stay_intended=0 (0%)  stay_forced=151 (76%)  moved=49 (24%)
+  agent_3: stay_intended=39 (20%)  stay_forced=101 (50%)  moved=60 (30%)
+[gif] blue ever-known: 48.8%
+Wrote: experiments/compromise-16x16-3b1r-coevo/report.html

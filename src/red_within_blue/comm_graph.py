@@ -36,33 +36,6 @@ def build_adjacency(positions: jax.Array, comm_ranges: jax.Array) -> jax.Array:
 
 
 # ---------------------------------------------------------------------------
-# Message routing
-# ---------------------------------------------------------------------------
-
-
-def route_messages(adjacency: jax.Array, messages_out: jax.Array) -> jax.Array:
-    """Mean-pool incoming messages along the communication graph.
-
-    Parameters
-    ----------
-    adjacency : Array[N, N] bool
-        ``adjacency[j, i]`` is True when agent *j* can send to agent *i*.
-    messages_out : Array[N, D] float32
-        Outgoing message vectors.
-
-    Returns
-    -------
-    Array[N, D] float32
-        ``messages_in[i]`` = mean of ``messages_out[j]`` over all *j* where
-        ``adjacency[j, i]``.  Zeros if agent *i* has no incoming neighbours.
-    """
-    adj_f = adjacency.astype(jnp.float32)              # [N, N]
-    incoming = adj_f.T @ messages_out                   # [N, D]
-    degree = adj_f.T.sum(axis=1)                        # [N]
-    return incoming / jnp.maximum(degree[:, None], 1.0)
-
-
-# ---------------------------------------------------------------------------
 # Metrics
 # ---------------------------------------------------------------------------
 
@@ -96,6 +69,53 @@ def compute_components(adjacency: jax.Array):
 def compute_isolated(degree: jax.Array) -> jax.Array:
     """Boolean mask: True where an agent has zero outgoing degree."""
     return degree == 0
+
+
+def compute_component_labels(adjacency: jax.Array) -> jax.Array:
+    """Connected-component labels via label propagation.
+
+    Each agent starts labelled with its own index. At every iteration, each
+    agent adopts the minimum label seen across itself and its symmetric-graph
+    neighbours. After at most N iterations the labels stabilise, and two
+    agents share a label iff they are in the same connected component.
+
+    Parameters
+    ----------
+    adjacency : Array[N, N] bool
+        Directed adjacency (the function symmetrises internally).
+
+    Returns
+    -------
+    Array[N] int32
+        Label of each agent. Same label ⇔ same component.
+    """
+    N = adjacency.shape[0]
+    sym = adjacency | adjacency.T | jnp.eye(N, dtype=jnp.bool_)  # include self-loops
+    labels = jnp.arange(N, dtype=jnp.int32)
+
+    def body(_, lbls: jax.Array) -> jax.Array:
+        # For each row i, take min of `lbls[j]` over j where sym[i, j]; else N.
+        masked = jnp.where(sym, lbls[None, :], jnp.int32(N))
+        return jnp.min(masked, axis=1).astype(jnp.int32)
+
+    labels = jax.lax.fori_loop(0, N, body, labels)
+    return labels
+
+
+def compute_largest_cc_mask(adjacency: jax.Array) -> jax.Array:
+    """Boolean [N] mask: True where agent is in the largest connected component.
+
+    Tie-break: if two CCs tie on size, the one containing the lowest-indexed
+    agent wins (deterministic). This matches ``compute_component_labels``,
+    which always labels a component by the minimum agent index it contains.
+    """
+    labels = compute_component_labels(adjacency)                  # [N]
+    N = adjacency.shape[0]
+    # bincount over labels in [0, N) — each label IS in [0, N).
+    counts = jnp.bincount(labels, length=N)                       # [N]
+    # Largest count; ties broken by lowest label (argmax returns first max).
+    largest_label = jnp.argmax(counts).astype(jnp.int32)
+    return labels == largest_label
 
 
 # ---------------------------------------------------------------------------

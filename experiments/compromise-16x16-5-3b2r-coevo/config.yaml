@@ -1,0 +1,54 @@
+# Compromise scenario: 5 agents on 16x16, 2 of 5 compromised (red).
+# Respects the red-strictly-less-than-blue constraint (3 decentralised blue
+# vs 2 centralised red). See compromise-16x16-5-4b1r.yaml for the m=1 pair.
+experiment_name: compromise-16x16-5-3b2r
+
+env:
+  grid_width: 16
+  grid_height: 16
+  num_agents: 5
+  num_red_agents: 2
+  wall_density: 0.0
+  max_steps: 200
+  comm_radius: 5.0
+  obs_radius: 1
+  view_radius: 1
+  survey_radius: 0
+  local_obs: true
+  center_spawn: true
+  normalize_uid: true
+
+network:
+  actor_hidden_dim: 128
+  actor_num_layers: 2
+  critic_hidden_dim: 128
+  critic_num_layers: 2
+  activation: relu
+
+train:
+  method: reinforce
+  red_policy: joint
+  red_hidden_dim: 128
+  red_num_layers: 2
+  red_pretrain_episodes: 0
+  lr: 1.0e-4
+  gamma: 0.99
+  num_episodes: 8000
+  num_seeds: 2
+  ent_coef: 0.05
+  grad_clip: 0.5
+
+reward:
+  disconnect_penalty: 0.0
+  isolation_weight: 0.0
+  cooperative_weight: 0.0
+  revisit_weight: 0.0
+  spread_weight: 0.0
+  terminal_bonus_scale: 10.0
+  terminal_bonus_divide: true
+  fog_potential_weight: 0.1
+
+enforce_connectivity: true
+
+warm_start: experiments/survey-local-16-N5-from-N4/checkpoint.npz
+warm_start_source_num_agents: 5

@@ -1,0 +1,25 @@
+Coevolution on adv-ladder-r6-32x32-6b4r: POP=8 TOPK=2 GENS=20 EPS_PER_PAIR=2
+Loading warm-start blue from experiments/adv-ladder-r5-32x32-7b3r/checkpoint.npz
+gen 00  t=6.2s  best_blue=+0.193 mean_blue=+0.171  best_red=-0.238 mean_red=-0.257
+gen 01  t=4.8s  best_blue=+0.186 mean_blue=+0.150  best_red=-0.168 mean_red=-0.225
+gen 02  t=4.8s  best_blue=+0.164 mean_blue=+0.147  best_red=-0.202 mean_red=-0.221
+gen 03  t=4.8s  best_blue=+0.234 mean_blue=+0.156  best_red=-0.201 mean_red=-0.235
+gen 04  t=4.7s  best_blue=+0.195 mean_blue=+0.147  best_red=-0.171 mean_red=-0.220
+gen 05  t=4.8s  best_blue=+0.179 mean_blue=+0.144  best_red=-0.155 mean_red=-0.216
+gen 06  t=4.7s  best_blue=+0.148 mean_blue=+0.097  best_red=-0.085 mean_red=-0.146
+gen 07  t=4.7s  best_blue=+0.163 mean_blue=+0.109  best_red=-0.124 mean_red=-0.163
+gen 08  t=4.7s  best_blue=+0.182 mean_blue=+0.102  best_red=-0.110 mean_red=-0.154
+gen 09  t=4.8s  best_blue=+0.212 mean_blue=+0.137  best_red=-0.151 mean_red=-0.206
+gen 10  t=4.7s  best_blue=+0.200 mean_blue=+0.123  best_red=-0.136 mean_red=-0.185
+gen 11  t=4.8s  best_blue=+0.205 mean_blue=+0.151  best_red=-0.192 mean_red=-0.226
+gen 12  t=4.7s  best_blue=+0.205 mean_blue=+0.162  best_red=-0.204 mean_red=-0.243
+gen 13  t=4.8s  best_blue=+0.228 mean_blue=+0.140  best_red=-0.159 mean_red=-0.210
+gen 14  t=4.8s  best_blue=+0.276 mean_blue=+0.151  best_red=-0.208 mean_red=-0.226
+gen 15  t=4.7s  best_blue=+0.262 mean_blue=+0.164  best_red=-0.185 mean_red=-0.247
+gen 16  t=4.7s  best_blue=+0.247 mean_blue=+0.184  best_red=-0.205 mean_red=-0.276
+gen 17  t=4.7s  best_blue=+0.271 mean_blue=+0.166  best_red=-0.171 mean_red=-0.250
+gen 18  t=4.7s  best_blue=+0.281 mean_blue=+0.163  best_red=-0.214 mean_red=-0.244
+gen 19  t=4.7s  best_blue=+0.277 mean_blue=+0.205  best_red=-0.235 mean_red=-0.308
+
+Saved best blue + best red to experiments/adv-ladder-r6-coevo
+Run: python -m red_within_blue.analysis.experiment_report --config configs/adv-ladder-r6-32x32-6b4r.yaml --experiment-dir experiments/adv-ladder-r6-coevo
